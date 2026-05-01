@@ -177,6 +177,29 @@ const Index = () => {
 
       <BottomNav active={tab} onChange={handleTab} />
       <InstallPrompt />
+
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit app?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're at the main screen. Do you want to leave the app?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowExitConfirm(false);
+                // Go back twice: once to undo our re-seed, once to actually leave.
+                window.history.go(-2);
+              }}
+            >
+              Exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 };
