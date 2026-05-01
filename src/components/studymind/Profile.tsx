@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { z } from "zod";
 
 type SubScreen = "main" | "streak" | "achievements" | "settings" | "help" | "logout" | "password" | "notifications";
 
