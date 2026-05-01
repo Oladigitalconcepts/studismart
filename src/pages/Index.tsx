@@ -31,6 +31,58 @@ const Index = () => {
   const [tab, setTab] = useState<Screen>("home");
   const [activeStudyPack, setActiveStudyPack] = useState<string | null>(null);
 
+  // Internal navigation history stack so the device/browser back button
+  // returns to the previous in-app view instead of closing the app.
+  const historyRef = useRef<Array<{ view: View; tab: Screen }>>([
+    { view: "splash", tab: "home" },
+  ]);
+  const isPoppingRef = useRef(false);
+
+  const pushHistory = useCallback((next: { view: View; tab: Screen }) => {
+    const stack = historyRef.current;
+    const top = stack[stack.length - 1];
+    if (top && top.view === next.view && top.tab === next.tab) return;
+    stack.push(next);
+    window.history.pushState({ idx: stack.length - 1 }, "");
+  }, []);
+
+  // Seed a single history entry on mount so the first back press is captured.
+  useEffect(() => {
+    window.history.replaceState({ idx: 0 }, "");
+  }, []);
+
+  // Handle hardware/browser back button: pop our internal stack instead of leaving.
+  useEffect(() => {
+    const onPop = () => {
+      const stack = historyRef.current;
+      if (stack.length > 1) {
+        stack.pop();
+        const prev = stack[stack.length - 1];
+        isPoppingRef.current = true;
+        setView(prev.view);
+        setTab(prev.tab);
+        isPoppingRef.current = false;
+      } else {
+        // Nothing to go back to — re-seed so the next back press is also caught.
+        window.history.pushState({ idx: 0 }, "");
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const navigate = useCallback(
+    (nextView: View, nextTab?: Screen) => {
+      const resolvedTab = nextTab ?? tab;
+      setView(nextView);
+      if (nextTab) setTab(nextTab);
+      if (!isPoppingRef.current) {
+        pushHistory({ view: nextView, tab: resolvedTab });
+      }
+    },
+    [tab, pushHistory]
+  );
+
   if (loading) {
     return (
       <main className="screen-shell flex items-center justify-center">
@@ -42,7 +94,7 @@ const Index = () => {
   if (view === "splash" && !user) {
     return (
       <main className="screen-shell !pb-0">
-        <Splash onStart={() => setView("auth")} />
+        <Splash onStart={() => navigate("auth")} />
       </main>
     );
   }
@@ -50,17 +102,18 @@ const Index = () => {
   if (!user) {
     return (
       <main className="screen-shell !pb-0">
-        <Auth onAuthed={() => setView("home")} />
+        <Auth onAuthed={() => navigate("home", "home")} />
       </main>
     );
   }
 
   const handleTab = (s: Screen) => {
-    setTab(s);
-    if (s === "home") setView("home");
-    if (s === "practice") setView("studypack");
-    if (s === "materials") setView("materials");
-    if (s === "profile") setView("profile");
+    let nextView: View = view;
+    if (s === "home") nextView = "home";
+    if (s === "practice") nextView = "studypack";
+    if (s === "materials") nextView = "materials";
+    if (s === "profile") nextView = "profile";
+    navigate(nextView, s);
   };
 
   return (
