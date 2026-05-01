@@ -13,6 +13,16 @@ import { InstallPrompt } from "@/components/studymind/InstallPrompt";
 import { OfflineBanner } from "@/components/studymind/OfflineBanner";
 import { useSession } from "@/hooks/useSession";
 import { Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type View =
   | "splash"
