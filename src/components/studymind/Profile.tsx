@@ -632,13 +632,37 @@ const PasswordScreen = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
+// Normalize a raw course code: uppercase, strip spaces, collapse repeats.
+const normalizeCourseCode = (raw: string): string =>
+  raw.trim().toUpperCase().replace(/[\s_]+/g, "-").replace(/-+/g, "-");
+
+// Pull plausible course codes out of a free-text title, e.g. "CSC101", "MATH-204".
+const COURSE_CODE_PATTERN = /\b([A-Z]{2,5})[\s-]?(\d{2,4}[A-Z]?)\b/g;
+const extractCourseCodes = (text: string): string[] => {
+  if (!text) return [];
+  const out: string[] = [];
+  for (const m of text.toUpperCase().matchAll(COURSE_CODE_PATTERN)) {
+    out.push(`${m[1]}${m[2]}`);
+  }
+  return out;
+};
+
 const profileSchema = z.object({
   display_name: z.string().trim().min(2, "At least 2 characters").max(60, "Must be 60 characters or fewer"),
   course_code: z
     .string()
     .trim()
-    .max(20, "Must be 20 characters or fewer")
-    .regex(/^[A-Za-z0-9 \-]*$/, "Letters, numbers, spaces, and hyphens only")
+    .transform((v) => normalizeCourseCode(v))
+    .pipe(
+      z.string()
+        .max(12, "Must be 12 characters or fewer")
+        .regex(/^[A-Z0-9-]*$/, "Use letters, numbers, and hyphens only")
+        .refine((v) => v === "" || v.length >= 2, "Use at least 2 characters")
+        .refine(
+          (v) => v === "" || /^[A-Z]{2,5}-?\d{1,4}[A-Z]?$/.test(v),
+          "Looks unusual — try a format like CSC101 or MATH-204"
+        )
+    )
     .optional()
     .or(z.literal("")),
 });
