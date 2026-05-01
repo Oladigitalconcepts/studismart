@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Settings as SettingsIcon, Flame, Award, ChevronRight, BookOpen, Layers, CheckCircle2,
   HelpCircle, LogOut, Moon, Sun, ArrowLeft, Trophy, Lock, Eye, EyeOff, Bell, Globe,
   Download, Trash2, User as UserIcon, Mail, KeyRound, MessageCircle, FileQuestion, AlertCircle,
-  Sparkles, Brain, Target, Pencil, FileText, HardDrive,
+  Sparkles, Brain, Target, Pencil, FileText, HardDrive, Loader2,
 } from "lucide-react";
 import { StatusBar } from "./StatusBar";
 import { supabase } from "@/integrations/supabase/client";
