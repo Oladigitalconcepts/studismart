@@ -1,0 +1,16 @@
+{
+  "name": "StudyMind AI",
+  "short_name": "StudyMind",
+  "description": "Turn your lecture notes into exam success with AI-powered study packs.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAFE",
+  "theme_color": "#7C5CFF",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

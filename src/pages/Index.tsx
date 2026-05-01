@@ -9,6 +9,7 @@ import { ExamFocus } from "@/components/studymind/ExamFocus";
 import { Profile } from "@/components/studymind/Profile";
 import { Materials } from "@/components/studymind/Materials";
 import { BottomNav, type Screen } from "@/components/studymind/BottomNav";
+import { InstallPrompt } from "@/components/studymind/InstallPrompt";
 import { useSession } from "@/hooks/useSession";
 import { Loader2 } from "lucide-react";
 
@@ -63,49 +64,52 @@ const Index = () => {
 
   return (
     <main className="screen-shell">
-      {(view === "splash" || view === "home" || view === "auth") && (
-        <Dashboard
-          onNavigate={(s) => {
-            if (s === "studypack") setActiveStudyPack(null);
-            setView(s);
-          }}
-        />
-      )}
-      {view === "upload" && (
-        <UploadScreen
-          onBack={() => setView("home")}
-          onComplete={(packId) => { setActiveStudyPack(packId); setView("studypack"); setTab("practice"); }}
-        />
-      )}
-      {view === "studypack" && (
-        <StudyPack
-          studyPackId={activeStudyPack}
-          onBack={() => { setView("home"); setTab("home"); }}
-          onPractice={(packId) => { setActiveStudyPack(packId); setView("practice"); }}
-        />
-      )}
-      {view === "practice" && (
-        <Practice
-          studyPackId={activeStudyPack}
-          onBack={() => setView("studypack")}
-          onFinish={() => setView("examfocus")}
-        />
-      )}
-      {view === "examfocus" && (
-        <ExamFocus
-          onBack={() => { setView("home"); setTab("home"); }}
-          onPractice={() => activeStudyPack && setView("practice")}
-        />
-      )}
-      {view === "profile" && <Profile />}
-      {view === "materials" && (
-        <Materials
-          onUpload={() => setView("upload")}
-          onOpenPack={(packId) => { setActiveStudyPack(packId); setView("studypack"); setTab("practice"); }}
-        />
-      )}
+      <div key={view} className="page-transition">
+        {(view === "splash" || view === "home" || view === "auth") && (
+          <Dashboard
+            onNavigate={(s) => {
+              if (s === "studypack") setActiveStudyPack(null);
+              setView(s);
+            }}
+          />
+        )}
+        {view === "upload" && (
+          <UploadScreen
+            onBack={() => setView("home")}
+            onComplete={(packId) => { setActiveStudyPack(packId); setView("studypack"); setTab("practice"); }}
+          />
+        )}
+        {view === "studypack" && (
+          <StudyPack
+            studyPackId={activeStudyPack}
+            onBack={() => { setView("home"); setTab("home"); }}
+            onPractice={(packId) => { setActiveStudyPack(packId); setView("practice"); }}
+          />
+        )}
+        {view === "practice" && (
+          <Practice
+            studyPackId={activeStudyPack}
+            onBack={() => setView("studypack")}
+            onFinish={() => setView("examfocus")}
+          />
+        )}
+        {view === "examfocus" && (
+          <ExamFocus
+            onBack={() => { setView("home"); setTab("home"); }}
+            onPractice={() => activeStudyPack && setView("practice")}
+          />
+        )}
+        {view === "profile" && <Profile />}
+        {view === "materials" && (
+          <Materials
+            onUpload={() => setView("upload")}
+            onOpenPack={(packId) => { setActiveStudyPack(packId); setView("studypack"); setTab("practice"); }}
+          />
+        )}
+      </div>
 
       <BottomNav active={tab} onChange={handleTab} />
+      <InstallPrompt />
     </main>
   );
 };
