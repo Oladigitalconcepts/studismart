@@ -951,7 +951,15 @@ const EditProfileScreen = ({
   const onCourseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     setCourseCode(v);
+    setShowSuggestions(true);
     scheduleSave(displayName, v);
+  };
+
+  const pickSuggestion = (code: string) => {
+    setCourseCode(code);
+    setShowSuggestions(false);
+    scheduleSave(displayName, code);
+    courseInputRef.current?.focus();
   };
 
   const StatusPill = () => {
@@ -1057,21 +1065,70 @@ const EditProfileScreen = ({
         </div>
 
         <div className="mb-4">
-          <label className="text-xs font-semibold text-muted-foreground">Course Code</label>
-          <Input
-            value={courseCode}
-            onChange={onCourseChange}
-            placeholder="e.g. CSC101"
-            maxLength={20}
-            aria-invalid={!!errors.course_code}
-            className={`mt-1 uppercase ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
-          />
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-muted-foreground">Course Code</label>
+            {recentCourses.length > 0 && (
+              <span className="text-[10px] text-muted-foreground">{recentCourses.length} from your materials</span>
+            )}
+          </div>
+          <div className="relative">
+            <Input
+              ref={courseInputRef}
+              value={courseCode}
+              onChange={onCourseChange}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setShowSuggestions(false);
+                if (e.key === "Enter" && filteredSuggestions[0]) {
+                  e.preventDefault();
+                  pickSuggestion(filteredSuggestions[0]);
+                }
+              }}
+              placeholder="e.g. CSC101"
+              maxLength={12}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-invalid={!!errors.course_code}
+              aria-autocomplete="list"
+              aria-expanded={showSuggestions && filteredSuggestions.length > 0}
+              className={`mt-1 uppercase ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+            />
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-border bg-popover shadow-elevated overflow-hidden animate-fade-in"
+              >
+                <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Recent courses
+                </p>
+                <ul className="max-h-56 overflow-y-auto">
+                  {filteredSuggestions.map((s) => (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pickSuggestion(s)}
+                        className="w-full px-3 py-2.5 flex items-center gap-2 text-left text-sm hover:bg-secondary tap-scale"
+                      >
+                        <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                        <span className="flex-1 font-mono font-semibold">{s}</span>
+                        <span className="text-[10px] text-muted-foreground">Tap to use</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
           {errors.course_code ? (
             <p className="mt-1.5 text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" /> {errors.course_code}
             </p>
           ) : (
-            <p className="mt-1.5 text-[11px] text-muted-foreground">Your primary course or programme</p>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Your primary course or programme · format like <span className="font-mono">CSC101</span>
+            </p>
           )}
         </div>
 
