@@ -632,13 +632,37 @@ const PasswordScreen = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
+// Normalize a raw course code: uppercase, strip spaces, collapse repeats.
+const normalizeCourseCode = (raw: string): string =>
+  raw.trim().toUpperCase().replace(/[\s_]+/g, "-").replace(/-+/g, "-");
+
+// Pull plausible course codes out of a free-text title, e.g. "CSC101", "MATH-204".
+const COURSE_CODE_PATTERN = /\b([A-Z]{2,5})[\s-]?(\d{2,4}[A-Z]?)\b/g;
+const extractCourseCodes = (text: string): string[] => {
+  if (!text) return [];
+  const out: string[] = [];
+  for (const m of text.toUpperCase().matchAll(COURSE_CODE_PATTERN)) {
+    out.push(`${m[1]}${m[2]}`);
+  }
+  return out;
+};
+
 const profileSchema = z.object({
   display_name: z.string().trim().min(2, "At least 2 characters").max(60, "Must be 60 characters or fewer"),
   course_code: z
     .string()
     .trim()
-    .max(20, "Must be 20 characters or fewer")
-    .regex(/^[A-Za-z0-9 \-]*$/, "Letters, numbers, spaces, and hyphens only")
+    .transform((v) => normalizeCourseCode(v))
+    .pipe(
+      z.string()
+        .max(12, "Must be 12 characters or fewer")
+        .regex(/^[A-Z0-9-]*$/, "Use letters, numbers, and hyphens only")
+        .refine((v) => v === "" || v.length >= 2, "Use at least 2 characters")
+        .refine(
+          (v) => v === "" || /^[A-Z]{2,5}-?\d{1,4}[A-Z]?$/.test(v),
+          "Looks unusual — try a format like CSC101 or MATH-204"
+        )
+    )
     .optional()
     .or(z.literal("")),
 });
@@ -661,6 +685,70 @@ const EditProfileScreen = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [errors, setErrors] = useState<{ display_name?: string; course_code?: string; form?: string }>({});
   const [status, setStatus] = useState<"idle" | "pending" | "saving" | "saved" | "error">("idle");
+
+  // Recently used course codes (extracted from the user's materials + their saved profile).
+  const [recentCourses, setRecentCourses] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const courseInputRef = useRef<HTMLInputElement | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // Pull the last 25 material titles + the saved profile course code.
+      const [{ data: materials }, { data: profile }] = await Promise.all([
+        supabase
+          .from("materials")
+          .select("title, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(25),
+        supabase.from("profiles").select("course_code").eq("id", user.id).maybeSingle(),
+      ]);
+      if (cancelled) return;
+      const seen = new Map<string, number>(); // code -> latest timestamp
+      for (const m of materials ?? []) {
+        const ts = new Date(m.created_at).getTime();
+        for (const code of extractCourseCodes(m.title ?? "")) {
+          const norm = normalizeCourseCode(code);
+          if (!norm) continue;
+          const prev = seen.get(norm);
+          if (prev === undefined || ts > prev) seen.set(norm, ts);
+        }
+      }
+      if (profile?.course_code) {
+        const norm = normalizeCourseCode(profile.course_code);
+        if (norm && !seen.has(norm)) seen.set(norm, 0);
+      }
+      const ranked = Array.from(seen.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([c]) => c)
+        .slice(0, 8);
+      setRecentCourses(ranked);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Close the suggestions dropdown when clicking elsewhere.
+  useEffect(() => {
+    const onDocPointer = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (suggestionsRef.current?.contains(t)) return;
+      if (courseInputRef.current?.contains(t)) return;
+      setShowSuggestions(false);
+    };
+    document.addEventListener("mousedown", onDocPointer);
+    return () => document.removeEventListener("mousedown", onDocPointer);
+  }, []);
+
+  const filteredSuggestions = useMemo(() => {
+    const q = normalizeCourseCode(courseCode);
+    if (!recentCourses.length) return [];
+    if (!q) return recentCourses;
+    return recentCourses.filter((c) => c.includes(q) && c !== q).slice(0, 6);
+  }, [courseCode, recentCourses]);
 
   // Track the most recently persisted values so we don't write redundant updates.
   const savedRef = useRef({ name: initialName, course: initialCourse });
@@ -863,7 +951,15 @@ const EditProfileScreen = ({
   const onCourseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     setCourseCode(v);
+    setShowSuggestions(true);
     scheduleSave(displayName, v);
+  };
+
+  const pickSuggestion = (code: string) => {
+    setCourseCode(code);
+    setShowSuggestions(false);
+    scheduleSave(displayName, code);
+    courseInputRef.current?.focus();
   };
 
   const StatusPill = () => {
@@ -969,21 +1065,70 @@ const EditProfileScreen = ({
         </div>
 
         <div className="mb-4">
-          <label className="text-xs font-semibold text-muted-foreground">Course Code</label>
-          <Input
-            value={courseCode}
-            onChange={onCourseChange}
-            placeholder="e.g. CSC101"
-            maxLength={20}
-            aria-invalid={!!errors.course_code}
-            className={`mt-1 uppercase ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
-          />
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-muted-foreground">Course Code</label>
+            {recentCourses.length > 0 && (
+              <span className="text-[10px] text-muted-foreground">{recentCourses.length} from your materials</span>
+            )}
+          </div>
+          <div className="relative">
+            <Input
+              ref={courseInputRef}
+              value={courseCode}
+              onChange={onCourseChange}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setShowSuggestions(false);
+                if (e.key === "Enter" && filteredSuggestions[0]) {
+                  e.preventDefault();
+                  pickSuggestion(filteredSuggestions[0]);
+                }
+              }}
+              placeholder="e.g. CSC101"
+              maxLength={12}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-invalid={!!errors.course_code}
+              aria-autocomplete="list"
+              aria-expanded={showSuggestions && filteredSuggestions.length > 0}
+              className={`mt-1 uppercase ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+            />
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-border bg-popover shadow-elevated overflow-hidden animate-fade-in"
+              >
+                <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Recent courses
+                </p>
+                <ul className="max-h-56 overflow-y-auto">
+                  {filteredSuggestions.map((s) => (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pickSuggestion(s)}
+                        className="w-full px-3 py-2.5 flex items-center gap-2 text-left text-sm hover:bg-secondary tap-scale"
+                      >
+                        <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                        <span className="flex-1 font-mono font-semibold">{s}</span>
+                        <span className="text-[10px] text-muted-foreground">Tap to use</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
           {errors.course_code ? (
             <p className="mt-1.5 text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" /> {errors.course_code}
             </p>
           ) : (
-            <p className="mt-1.5 text-[11px] text-muted-foreground">Your primary course or programme</p>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Your primary course or programme · format like <span className="font-mono">CSC101</span>
+            </p>
           )}
         </div>
 
