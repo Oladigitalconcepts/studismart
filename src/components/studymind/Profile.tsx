@@ -644,10 +644,21 @@ const profileSchema = z.object({
 });
 
 const EditProfileScreen = ({
-  onBack, initialName, initialCourse, email, onSaved,
-}: { onBack: () => void; initialName: string; initialCourse: string; email: string; onSaved: () => void | Promise<void> }) => {
+  onBack, initialName, initialCourse, initialAvatarUrl, email, onSaved,
+}: {
+  onBack: () => void;
+  initialName: string;
+  initialCourse: string;
+  initialAvatarUrl: string | null;
+  email: string;
+  onSaved: () => void | Promise<void>;
+}) => {
   const [displayName, setDisplayName] = useState(initialName);
   const [courseCode, setCourseCode] = useState(initialCourse);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
+  const [avatarBusy, setAvatarBusy] = useState<"upload" | "remove" | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [errors, setErrors] = useState<{ display_name?: string; course_code?: string; form?: string }>({});
   const [status, setStatus] = useState<"idle" | "pending" | "saving" | "saved" | "error">("idle");
 
@@ -656,6 +667,111 @@ const EditProfileScreen = ({
   const debounceRef = useRef<number | null>(null);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const savedTimerRef = useRef<number | null>(null);
+
+  const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+
+  const onPickAvatar = () => {
+    setAvatarError(null);
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError("Please choose a PNG, JPG, WEBP, or GIF image.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      setAvatarError("Image must be 5 MB or smaller.");
+      return;
+    }
+
+    setAvatarBusy("upload");
+    setAvatarError(null);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setAvatarBusy(null);
+      setAvatarError("You're not signed in.");
+      return;
+    }
+
+    const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      setAvatarBusy(null);
+      setAvatarError(uploadError.message);
+      return;
+    }
+
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    // Cache-bust so the new avatar shows immediately.
+    const publicUrl = `${pub.publicUrl}?v=${Date.now()}`;
+
+    const { error: dbError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+
+    if (dbError) {
+      setAvatarBusy(null);
+      setAvatarError(dbError.message);
+      return;
+    }
+
+    setAvatarUrl(publicUrl);
+    setAvatarBusy(null);
+    toast({ title: "Profile photo updated" });
+    await onSaved();
+  };
+
+  const removeAvatar = async () => {
+    if (!avatarUrl) return;
+    setAvatarBusy("remove");
+    setAvatarError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setAvatarBusy(null);
+      setAvatarError("You're not signed in.");
+      return;
+    }
+
+    // Best-effort: remove the file too. Extract the storage path from the URL.
+    try {
+      const marker = "/avatars/";
+      const idx = avatarUrl.indexOf(marker);
+      if (idx !== -1) {
+        const storagePath = avatarUrl.slice(idx + marker.length).split("?")[0];
+        if (storagePath.startsWith(`${user.id}/`)) {
+          await supabase.storage.from("avatars").remove([storagePath]);
+        }
+      }
+    } catch { /* noop */ }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+
+    if (error) {
+      setAvatarBusy(null);
+      setAvatarError(error.message);
+      return;
+    }
+    setAvatarUrl(null);
+    setAvatarBusy(null);
+    toast({ title: "Profile photo removed" });
+    await onSaved();
+  };
 
   const validate = (name: string, course: string): { ok: boolean; errs: typeof errors } => {
     const result = profileSchema.safeParse({ display_name: name, course_code: course });
