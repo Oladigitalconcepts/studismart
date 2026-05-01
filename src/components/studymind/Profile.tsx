@@ -99,6 +99,7 @@ export const Profile = () => {
           </div>
           <div className="min-w-0">
             <h2 className="font-bold text-lg leading-tight truncate">{name || "Student"}</h2>
+            {course && <p className="text-white/90 text-xs font-medium truncate">{course}</p>}
             <p className="text-white/80 text-sm truncate">{email}</p>
           </div>
         </div>
