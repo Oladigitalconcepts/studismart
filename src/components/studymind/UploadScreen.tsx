@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { extractTextFromFile } from "@/lib/extractText";
 import aiRobot from "@/assets/ai-robot.png";
 
 interface Props {
@@ -62,8 +63,18 @@ export const UploadScreen = ({ onBack, onComplete }: Props) => {
         const { error: upErr } = await supabase.storage.from("materials").upload(storagePath, file);
         if (upErr) throw upErr;
 
-        if (file.type.startsWith("text/") || ext === "txt" || ext === "md") {
-          rawText = await file.text();
+        // Extract text in-browser for PDF / DOCX / text files
+        try {
+          const extracted = await extractTextFromFile(file);
+          if (extracted && extracted.length > (rawText?.length ?? 0)) {
+            rawText = extracted;
+          }
+        } catch (err) {
+          console.warn("Text extraction failed", err);
+        }
+
+        if (!rawText || rawText.length < 30) {
+          throw new Error("Couldn't read text from this file. Try pasting the content instead.");
         }
       }
 
@@ -163,7 +174,7 @@ export const UploadScreen = ({ onBack, onComplete }: Props) => {
               {file ? <FileText className="h-7 w-7 text-primary" /> : <UploadCloud className="h-7 w-7 text-primary" />}
             </div>
             <p className="text-sm font-medium">{file ? file.name : "Tap to choose a file"}</p>
-            <p className="text-[11px] text-muted-foreground mt-2">PDF, DOCX, TXT — text files work best</p>
+            <p className="text-[11px] text-muted-foreground mt-2">PDF, DOCX, TXT — text is extracted automatically</p>
           </div>
         </label>
 
