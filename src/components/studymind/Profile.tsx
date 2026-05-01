@@ -32,6 +32,7 @@ export const Profile = () => {
   const [name, setName] = useState("");
   const [course, setCourse] = useState("");
   const [email, setEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stats, setStats] = useState({ packs: 0, attempts: 0, correct: 0, materials: 0 });
 
   useEffect(() => { applyTheme(dark); }, [dark]);
@@ -42,11 +43,12 @@ export const Profile = () => {
     setEmail(user.email ?? "");
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name, course_code")
+      .select("display_name, course_code, avatar_url")
       .eq("id", user.id)
       .maybeSingle();
     setName(profile?.display_name ?? user.email?.split("@")[0] ?? "");
     setCourse(profile?.course_code ?? "");
+    setAvatarUrl(profile?.avatar_url ?? null);
   };
 
   useEffect(() => {
