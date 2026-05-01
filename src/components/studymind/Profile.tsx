@@ -67,11 +67,14 @@ export const Profile = () => {
 
   if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} />;
   if (screen === "achievements") return <AchievementsScreen onBack={() => setScreen("main")} correct={stats.correct} packs={stats.packs} materials={stats.materials} />;
-  if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} onEditProfile={() => setScreen("editprofile")} />;
+  if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} onEditProfile={() => setScreen("editprofile")} onEmail={() => setScreen("email")} onLanguage={() => setScreen("language")} onDownloads={() => setScreen("downloads")} />;
   if (screen === "help") return <HelpScreen onBack={() => setScreen("main")} />;
   if (screen === "password") return <PasswordScreen onBack={() => setScreen("settings")} />;
   if (screen === "notifications") return <NotificationsScreen onBack={() => setScreen("settings")} />;
   if (screen === "editprofile") return <EditProfileScreen onBack={() => setScreen("settings")} initialName={name} initialCourse={course} email={email} onSaved={loadProfile} />;
+  if (screen === "email") return <EmailPreferencesScreen onBack={() => setScreen("settings")} />;
+  if (screen === "language") return <LanguageScreen onBack={() => setScreen("settings")} />;
+  if (screen === "downloads") return <DownloadManagementScreen onBack={() => setScreen("settings")} />;
   if (screen === "logout") return <LogoutScreen onCancel={() => setScreen("main")} />;
 
   const items = [
