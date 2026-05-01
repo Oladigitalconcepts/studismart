@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 
-type SubScreen = "main" | "streak" | "achievements" | "settings" | "help" | "logout" | "password" | "notifications";
+type SubScreen = "main" | "streak" | "achievements" | "settings" | "help" | "logout" | "password" | "notifications" | "editprofile";
 
 const THEME_KEY = "studymind-theme";
 
@@ -26,19 +26,28 @@ export const Profile = () => {
   const [dark, setDark] = useState(() => localStorage.getItem(THEME_KEY) === "dark");
   const [screen, setScreen] = useState<SubScreen>("main");
   const [name, setName] = useState("");
+  const [course, setCourse] = useState("");
   const [email, setEmail] = useState("");
   const [stats, setStats] = useState({ packs: 0, attempts: 0, correct: 0, materials: 0 });
 
   useEffect(() => { applyTheme(dark); }, [dark]);
 
+  const loadProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setEmail(user.email ?? "");
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name, course_code")
+      .eq("id", user.id)
+      .maybeSingle();
+    setName(profile?.display_name ?? user.email?.split("@")[0] ?? "");
+    setCourse(profile?.course_code ?? "");
+  };
+
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setEmail(user.email ?? "");
-      const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-      setName(profile?.display_name ?? user.email?.split("@")[0] ?? "");
-
+      await loadProfile();
       const [{ count: packs }, { count: attempts }, { data: ans }, { count: materials }] = await Promise.all([
         supabase.from("study_packs").select("*", { count: "exact", head: true }),
         supabase.from("practice_attempts").select("*", { count: "exact", head: true }),
@@ -54,10 +63,11 @@ export const Profile = () => {
 
   if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} />;
   if (screen === "achievements") return <AchievementsScreen onBack={() => setScreen("main")} correct={stats.correct} packs={stats.packs} materials={stats.materials} />;
-  if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} />;
+  if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} onEditProfile={() => setScreen("editprofile")} />;
   if (screen === "help") return <HelpScreen onBack={() => setScreen("main")} />;
   if (screen === "password") return <PasswordScreen onBack={() => setScreen("settings")} />;
   if (screen === "notifications") return <NotificationsScreen onBack={() => setScreen("settings")} />;
+  if (screen === "editprofile") return <EditProfileScreen onBack={() => setScreen("settings")} initialName={name} initialCourse={course} email={email} onSaved={loadProfile} />;
   if (screen === "logout") return <LogoutScreen onCancel={() => setScreen("main")} />;
 
   const items = [
