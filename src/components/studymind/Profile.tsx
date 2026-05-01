@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 
-type SubScreen = "main" | "streak" | "achievements" | "settings" | "help" | "logout" | "password" | "notifications";
+type SubScreen = "main" | "streak" | "achievements" | "settings" | "help" | "logout" | "password" | "notifications" | "editprofile";
 
 const THEME_KEY = "studymind-theme";
 
@@ -26,19 +26,28 @@ export const Profile = () => {
   const [dark, setDark] = useState(() => localStorage.getItem(THEME_KEY) === "dark");
   const [screen, setScreen] = useState<SubScreen>("main");
   const [name, setName] = useState("");
+  const [course, setCourse] = useState("");
   const [email, setEmail] = useState("");
   const [stats, setStats] = useState({ packs: 0, attempts: 0, correct: 0, materials: 0 });
 
   useEffect(() => { applyTheme(dark); }, [dark]);
 
+  const loadProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setEmail(user.email ?? "");
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name, course_code")
+      .eq("id", user.id)
+      .maybeSingle();
+    setName(profile?.display_name ?? user.email?.split("@")[0] ?? "");
+    setCourse(profile?.course_code ?? "");
+  };
+
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setEmail(user.email ?? "");
-      const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-      setName(profile?.display_name ?? user.email?.split("@")[0] ?? "");
-
+      await loadProfile();
       const [{ count: packs }, { count: attempts }, { data: ans }, { count: materials }] = await Promise.all([
         supabase.from("study_packs").select("*", { count: "exact", head: true }),
         supabase.from("practice_attempts").select("*", { count: "exact", head: true }),
@@ -54,10 +63,11 @@ export const Profile = () => {
 
   if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} />;
   if (screen === "achievements") return <AchievementsScreen onBack={() => setScreen("main")} correct={stats.correct} packs={stats.packs} materials={stats.materials} />;
-  if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} />;
+  if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} onEditProfile={() => setScreen("editprofile")} />;
   if (screen === "help") return <HelpScreen onBack={() => setScreen("main")} />;
   if (screen === "password") return <PasswordScreen onBack={() => setScreen("settings")} />;
   if (screen === "notifications") return <NotificationsScreen onBack={() => setScreen("settings")} />;
+  if (screen === "editprofile") return <EditProfileScreen onBack={() => setScreen("settings")} initialName={name} initialCourse={course} email={email} onSaved={loadProfile} />;
   if (screen === "logout") return <LogoutScreen onCancel={() => setScreen("main")} />;
 
   const items = [
@@ -89,6 +99,7 @@ export const Profile = () => {
           </div>
           <div className="min-w-0">
             <h2 className="font-bold text-lg leading-tight truncate">{name || "Student"}</h2>
+            {course && <p className="text-white/90 text-xs font-medium truncate">{course}</p>}
             <p className="text-white/80 text-sm truncate">{email}</p>
           </div>
         </div>
@@ -268,13 +279,13 @@ const AchievementsScreen = ({ onBack, correct, packs, materials }: { onBack: () 
   );
 };
 
-const SettingsScreen = ({ onBack, dark, setDark, onPassword, onNotifications }: { onBack: () => void; dark: boolean; setDark: (v: boolean) => void; onPassword: () => void; onNotifications: () => void }) => {
+const SettingsScreen = ({ onBack, dark, setDark, onPassword, onNotifications, onEditProfile }: { onBack: () => void; dark: boolean; setDark: (v: boolean) => void; onPassword: () => void; onNotifications: () => void; onEditProfile: () => void }) => {
   return (
     <div className="animate-fade-in">
       <SubHeader title="Settings" onBack={onBack} />
       <div className="px-5 space-y-6 pb-6">
         <Section title="Account">
-          <Row icon={UserIcon} label="Edit Profile" onClick={() => toast({ title: "Coming soon" })} />
+          <Row icon={UserIcon} label="Edit Profile" onClick={onEditProfile} />
           <Row icon={KeyRound} label="Change Password" onClick={onPassword} />
           <Row icon={Mail} label="Email Preferences" onClick={() => toast({ title: "Coming soon" })} />
         </Section>
@@ -522,6 +533,139 @@ const PasswordScreen = ({ onBack }: { onBack: () => void }) => {
           className="w-full mt-6 h-12 rounded-2xl gradient-primary text-white font-semibold disabled:opacity-60"
         >
           {loading ? "Updating..." : "Update Password"}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const profileSchema = z.object({
+  display_name: z.string().trim().min(2, "At least 2 characters").max(60, "Must be 60 characters or fewer"),
+  course_code: z
+    .string()
+    .trim()
+    .max(20, "Must be 20 characters or fewer")
+    .regex(/^[A-Za-z0-9 \-]*$/, "Letters, numbers, spaces, and hyphens only")
+    .optional()
+    .or(z.literal("")),
+});
+
+const EditProfileScreen = ({
+  onBack, initialName, initialCourse, email, onSaved,
+}: { onBack: () => void; initialName: string; initialCourse: string; email: string; onSaved: () => void | Promise<void> }) => {
+  const [displayName, setDisplayName] = useState(initialName);
+  const [courseCode, setCourseCode] = useState(initialCourse);
+  const [errors, setErrors] = useState<{ display_name?: string; course_code?: string; form?: string }>({});
+  const [saving, setSaving] = useState(false);
+
+  const dirty = displayName !== initialName || courseCode !== initialCourse;
+
+  const validate = () => {
+    const result = profileSchema.safeParse({ display_name: displayName, course_code: courseCode });
+    if (result.success) { setErrors({}); return true; }
+    const next: typeof errors = {};
+    for (const issue of result.error.issues) {
+      const k = issue.path[0] as "display_name" | "course_code";
+      if (k && !next[k]) next[k] = issue.message;
+    }
+    setErrors(next);
+    return false;
+  };
+
+  const save = async () => {
+    if (!validate()) return;
+    setSaving(true);
+    setErrors((e) => ({ ...e, form: undefined }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSaving(false);
+      setErrors({ form: "You're not signed in" });
+      return;
+    }
+    const payload = {
+      id: user.id,
+      display_name: displayName.trim(),
+      course_code: courseCode.trim() ? courseCode.trim().toUpperCase() : null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+    setSaving(false);
+    if (error) {
+      setErrors({ form: error.message });
+      return;
+    }
+    toast({ title: "Profile updated" });
+    await onSaved();
+    onBack();
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <SubHeader title="Edit Profile" onBack={onBack} />
+      <div className="px-5">
+        <div className="flex justify-center py-4">
+          <div className="h-20 w-20 rounded-full gradient-primary flex items-center justify-center text-white text-2xl font-bold shadow-glow">
+            {(displayName || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="text-xs font-semibold text-muted-foreground">Display Name</label>
+          <Input
+            value={displayName}
+            onChange={(e) => { setDisplayName(e.target.value); if (errors.display_name) setErrors((p) => ({ ...p, display_name: undefined })); }}
+            onBlur={validate}
+            placeholder="e.g. Fayo Adeyemi"
+            maxLength={60}
+            aria-invalid={!!errors.display_name}
+            className={`mt-1 ${errors.display_name ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+          />
+          {errors.display_name && (
+            <p className="mt-1.5 text-xs text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" /> {errors.display_name}
+            </p>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <label className="text-xs font-semibold text-muted-foreground">Course Code</label>
+          <Input
+            value={courseCode}
+            onChange={(e) => { setCourseCode(e.target.value); if (errors.course_code) setErrors((p) => ({ ...p, course_code: undefined })); }}
+            onBlur={validate}
+            placeholder="e.g. CSC101"
+            maxLength={20}
+            aria-invalid={!!errors.course_code}
+            className={`mt-1 uppercase ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+          />
+          {errors.course_code ? (
+            <p className="mt-1.5 text-xs text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" /> {errors.course_code}
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[11px] text-muted-foreground">Your primary course or programme</p>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <label className="text-xs font-semibold text-muted-foreground">Email</label>
+          <Input value={email} disabled readOnly className="mt-1 bg-muted text-muted-foreground" />
+          <p className="mt-1.5 text-[11px] text-muted-foreground">Email can't be changed here</p>
+        </div>
+
+        {errors.form && (
+          <div className="mt-4 rounded-xl bg-destructive/10 border border-destructive/30 p-3 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <p className="text-xs text-destructive">{errors.form}</p>
+          </div>
+        )}
+
+        <Button
+          onClick={save}
+          disabled={saving || !dirty}
+          className="w-full mt-6 h-12 rounded-2xl gradient-primary text-white font-semibold disabled:opacity-60"
+        >
+          {saving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </div>
