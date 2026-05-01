@@ -13,6 +13,16 @@ import { InstallPrompt } from "@/components/studymind/InstallPrompt";
 import { OfflineBanner } from "@/components/studymind/OfflineBanner";
 import { useSession } from "@/hooks/useSession";
 import { Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type View =
   | "splash"
@@ -37,6 +47,7 @@ const Index = () => {
     { view: "splash", tab: "home" },
   ]);
   const isPoppingRef = useRef(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const pushHistory = useCallback((next: { view: View; tab: Screen }) => {
     const stack = historyRef.current;
@@ -63,8 +74,9 @@ const Index = () => {
         setTab(prev.tab);
         isPoppingRef.current = false;
       } else {
-        // Nothing to go back to — re-seed so the next back press is also caught.
+        // No internal history left — re-seed so back is still captured, then ask to exit.
         window.history.pushState({ idx: 0 }, "");
+        setShowExitConfirm(true);
       }
     };
     window.addEventListener("popstate", onPop);
@@ -165,6 +177,29 @@ const Index = () => {
 
       <BottomNav active={tab} onChange={handleTab} />
       <InstallPrompt />
+
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Exit app?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're at the main screen. Do you want to leave the app?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowExitConfirm(false);
+                // Go back twice: once to undo our re-seed, once to actually leave.
+                window.history.go(-2);
+              }}
+            >
+              Exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 };
