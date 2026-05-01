@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cacheGet, cacheSet } from "@/lib/offlineCache";
 
 interface Props {
   studyPackId: string | null;
@@ -12,18 +13,40 @@ interface Props {
   onPractice: (studyPackId: string) => void;
 }
 
+interface CachedPack {
+  pack: any | null;
+  material: any | null;
+  questionCount: number;
+}
+
 export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
   const [tab, setTab] = useState<"summary" | "topics" | "questions">("summary");
-  const [pack, setPack] = useState<any | null>(null);
-  const [material, setMaterial] = useState<any | null>(null);
-  const [questionCount, setQuestionCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const cacheName = `studypack:${studyPackId ?? "latest"}`;
+  const initial = cacheGet<CachedPack>(null, cacheName);
+  const [pack, setPack] = useState<any | null>(initial?.pack ?? null);
+  const [material, setMaterial] = useState<any | null>(initial?.material ?? null);
+  const [questionCount, setQuestionCount] = useState(initial?.questionCount ?? 0);
+  const [loading, setLoading] = useState(!initial);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      const cached = cacheGet<CachedPack>(user?.id ?? null, cacheName);
+      if (cached && !cancelled) {
+        setPack(cached.pack);
+        setMaterial(cached.material);
+        setQuestionCount(cached.questionCount);
+        setLoading(false);
+      } else if (!cached) {
+        setLoading(true);
+      }
+
       let pid = studyPackId;
+      let nextPack: any | null = null;
+      let nextMaterial: any | null = null;
+      let nextCount = 0;
+
       if (!pid) {
         const { data } = await supabase
           .from("study_packs")
@@ -32,26 +55,47 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
           .limit(1)
           .maybeSingle();
         pid = data?.id ?? null;
-        if (cancelled) return;
-        setPack(data);
+        nextPack = data;
       } else {
         const { data } = await supabase.from("study_packs").select("*").eq("id", pid).maybeSingle();
-        if (cancelled) return;
-        setPack(data);
+        nextPack = data;
       }
+      if (cancelled) return;
+      setPack(nextPack);
+
       if (pid) {
         const { data: pkg } = await supabase.from("study_packs").select("material_id").eq("id", pid).maybeSingle();
         if (pkg?.material_id) {
           const { data: mat } = await supabase.from("materials").select("*").eq("id", pkg.material_id).maybeSingle();
+          nextMaterial = mat;
           if (!cancelled) setMaterial(mat);
         }
         const { count } = await supabase
           .from("questions")
           .select("*", { count: "exact", head: true })
           .eq("study_pack_id", pid);
-        if (!cancelled) setQuestionCount(count ?? 0);
+        nextCount = count ?? 0;
+        if (!cancelled) setQuestionCount(nextCount);
+
+        // Cache the questions themselves so Practice works offline.
+        const { data: qs } = await supabase
+          .from("questions")
+          .select("*")
+          .eq("study_pack_id", pid)
+          .order("created_at", { ascending: true })
+          .limit(50);
+        if (qs && !cancelled) {
+          cacheSet(user?.id ?? null, `questions:${pid}`, qs);
+        }
       }
-      if (!cancelled) setLoading(false);
+      if (!cancelled) {
+        cacheSet(user?.id ?? null, cacheName, {
+          pack: nextPack,
+          material: nextMaterial,
+          questionCount: nextCount,
+        });
+        setLoading(false);
+      }
     };
     load();
     return () => { cancelled = true; };
