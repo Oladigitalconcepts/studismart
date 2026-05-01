@@ -74,8 +74,9 @@ const Index = () => {
         setTab(prev.tab);
         isPoppingRef.current = false;
       } else {
-        // Nothing to go back to — re-seed so the next back press is also caught.
+        // No internal history left — re-seed so back is still captured, then ask to exit.
         window.history.pushState({ idx: 0 }, "");
+        setShowExitConfirm(true);
       }
     };
     window.addEventListener("popstate", onPop);
