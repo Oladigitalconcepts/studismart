@@ -286,7 +286,78 @@ const AchievementsScreen = ({ onBack, correct, packs, materials }: { onBack: () 
   );
 };
 
-const SettingsScreen = ({ onBack, dark, setDark, onPassword, onNotifications, onEditProfile }: { onBack: () => void; dark: boolean; setDark: (v: boolean) => void; onPassword: () => void; onNotifications: () => void; onEditProfile: () => void }) => {
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "pt", label: "Português" },
+  { code: "ar", label: "العربية" },
+  { code: "yo", label: "Yorùbá" },
+  { code: "ig", label: "Igbo" },
+  { code: "ha", label: "Hausa" },
+  { code: "sw", label: "Kiswahili" },
+];
+
+const formatBytes = (bytes: number): string => {
+  if (!bytes || bytes < 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let i = 0;
+  let n = bytes;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+};
+
+const measureCacheBytes = (): number => {
+  let total = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith("studymind-cache-")) continue;
+      const v = localStorage.getItem(k) ?? "";
+      // Approximate UTF-16 storage: 2 bytes per char (key + value).
+      total += (k.length + v.length) * 2;
+    }
+  } catch { /* noop */ }
+  return total;
+};
+
+const SettingsScreen = ({
+  onBack, dark, setDark,
+  onPassword, onNotifications, onEditProfile,
+  onEmail, onLanguage, onDownloads,
+}: {
+  onBack: () => void; dark: boolean; setDark: (v: boolean) => void;
+  onPassword: () => void; onNotifications: () => void; onEditProfile: () => void;
+  onEmail: () => void; onLanguage: () => void; onDownloads: () => void;
+}) => {
+  const [langCode, setLangCode] = useState<string>("en");
+  const [cacheBytes, setCacheBytes] = useState<number>(0);
+  const [clearing, setClearing] = useState(false);
+
+  useEffect(() => {
+    setCacheBytes(measureCacheBytes());
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles").select("language").eq("id", user.id).maybeSingle();
+      if (data?.language) setLangCode(data.language);
+    })();
+  }, []);
+
+  const langLabel = LANGUAGES.find((l) => l.code === langCode)?.label ?? "English";
+
+  const clearCache = async () => {
+    setClearing(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    cacheClearForUser(user?.id ?? null);
+    cacheClearForUser(null);
+    setCacheBytes(measureCacheBytes());
+    setClearing(false);
+    toast({ title: "Cache cleared", description: "Offline data has been removed from this device." });
+  };
+
   return (
     <div className="animate-fade-in">
       <SubHeader title="Settings" onBack={onBack} />
@@ -294,18 +365,23 @@ const SettingsScreen = ({ onBack, dark, setDark, onPassword, onNotifications, on
         <Section title="Account">
           <Row icon={UserIcon} label="Edit Profile" onClick={onEditProfile} />
           <Row icon={KeyRound} label="Change Password" onClick={onPassword} />
-          <Row icon={Mail} label="Email Preferences" onClick={() => toast({ title: "Coming soon" })} />
+          <Row icon={Mail} label="Email Preferences" onClick={onEmail} />
         </Section>
 
         <Section title="App Preferences">
           <ToggleRow icon={Moon} label="Dark Mode" checked={dark} onChange={setDark} />
           <Row icon={Bell} label="Notifications" onClick={onNotifications} />
-          <Row icon={Globe} label="Language" trailing={<span className="text-xs text-muted-foreground">English</span>} onClick={() => toast({ title: "Coming soon" })} />
+          <Row icon={Globe} label="Language" trailing={<span className="text-xs text-muted-foreground">{langLabel}</span>} onClick={onLanguage} />
         </Section>
 
         <Section title="Data & Storage">
-          <Row icon={Download} label="Download Management" onClick={() => toast({ title: "Coming soon" })} />
-          <Row icon={Trash2} label="Clear Cache" trailing={<span className="text-xs text-muted-foreground">21.4 MB</span>} onClick={() => { toast({ title: "Cache cleared" }); }} />
+          <Row icon={Download} label="Download Management" onClick={onDownloads} />
+          <Row
+            icon={Trash2}
+            label={clearing ? "Clearing…" : "Clear Cache"}
+            trailing={<span className="text-xs text-muted-foreground">{formatBytes(cacheBytes)}</span>}
+            onClick={clearing ? undefined : clearCache}
+          />
         </Section>
 
         <Section title="About">
