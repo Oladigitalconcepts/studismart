@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { cacheGet, cacheSet, enqueueOp, flushQueue } from "@/lib/offlineCache";
 
 interface Props {
   studyPackId: string | null;
@@ -41,12 +42,32 @@ export const Practice = ({ studyPackId, onBack, onFinish }: Props) => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      const cacheKey = `questions:${studyPackId ?? "any"}`;
+
+      // Hydrate from cache first so practice works offline.
+      const cached = cacheGet<Q[]>(user?.id ?? null, cacheKey);
+      if (cached && cached.length > 0 && !cancelled) {
+        setQuestions(cached);
+        setLoading(false);
+      }
+
+      if (!navigator.onLine) {
+        if (!cached && !cancelled) setLoading(false);
+        return;
+      }
+
       let q = supabase.from("questions").select("*").order("created_at", { ascending: true }).limit(25);
       if (studyPackId) q = q.eq("study_pack_id", studyPackId);
       const { data, error } = await q;
       if (cancelled) return;
-      if (error) toast({ title: error.message, variant: "destructive" });
-      setQuestions((data ?? []) as any);
+      if (error && !cached) {
+        toast({ title: error.message, variant: "destructive" });
+      }
+      if (data) {
+        setQuestions(data as any);
+        cacheSet(user?.id ?? null, cacheKey, data);
+      }
       setLoading(false);
     };
     load();
@@ -64,13 +85,23 @@ export const Practice = ({ studyPackId, onBack, onFinish }: Props) => {
     const isCorrect = selected === current.correct_index;
     if (isCorrect) setCorrectCount((c) => c + 1);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from("answer_attempts").insert({
-        user_id: user.id,
-        question_id: current.id,
-        topic: current.topic,
-        is_correct: isCorrect,
-      });
+    if (!user) return;
+
+    const payload = {
+      user_id: user.id,
+      question_id: current.id,
+      topic: current.topic,
+      is_correct: isCorrect,
+    };
+
+    if (!navigator.onLine) {
+      enqueueOp({ kind: "answer_attempt", payload });
+      return;
+    }
+    const { error } = await supabase.from("answer_attempts").insert(payload);
+    if (error) {
+      // Network error or transient failure — queue for later sync.
+      enqueueOp({ kind: "answer_attempt", payload });
     }
   };
 
@@ -85,13 +116,21 @@ export const Practice = ({ studyPackId, onBack, onFinish }: Props) => {
     setFinishing(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("practice_attempts").insert({
+      const payload = {
         user_id: user.id,
         study_pack_id: studyPackId,
         total: questions.length,
         correct: correctCount,
         duration_seconds: Math.round((Date.now() - startedAt) / 1000),
-      });
+      };
+      if (!navigator.onLine) {
+        enqueueOp({ kind: "practice_attempt", payload });
+      } else {
+        const { error } = await supabase.from("practice_attempts").insert(payload);
+        if (error) enqueueOp({ kind: "practice_attempt", payload });
+        // Opportunistically flush any queued ops while we're online.
+        flushQueue(supabase as never).catch(() => {});
+      }
     }
     onFinish();
   };

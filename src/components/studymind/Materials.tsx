@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { cacheGet, cacheSet } from "@/lib/offlineCache";
 
 interface Props {
   onUpload: () => void;
@@ -12,19 +13,32 @@ interface Props {
 }
 
 export const Materials = ({ onUpload, onOpenPack }: Props) => {
-  const [items, setItems] = useState<any[]>([]);
+  // Hydrate immediately from cache so offline users see prior materials.
+  const [items, setItems] = useState<any[]>(() => cacheGet<any[]>(null, "materials") ?? []);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(items.length === 0);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      // Re-hydrate with user-scoped cache once we know the user id.
+      if (user) {
+        const cached = cacheGet<any[]>(user.id, "materials");
+        if (cached && !cancelled) setItems(cached);
+      }
+      const { data, error } = await supabase
         .from("materials")
         .select("id, title, status, created_at, study_packs(id)")
         .order("created_at", { ascending: false });
-      setItems(data ?? []);
+      if (cancelled) return;
+      if (!error && data) {
+        setItems(data);
+        cacheSet(user?.id ?? null, "materials", data);
+      }
       setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, []);
 
   const filtered = items.filter((i) => i.title.toLowerCase().includes(query.toLowerCase()));
