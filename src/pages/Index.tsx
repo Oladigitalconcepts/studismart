@@ -124,41 +124,41 @@ const Index = () => {
           <Dashboard
             onNavigate={(s) => {
               if (s === "studypack") setActiveStudyPack(null);
-              setView(s);
+              navigate(s as View);
             }}
           />
         )}
         {view === "upload" && (
           <UploadScreen
-            onBack={() => setView("home")}
-            onComplete={(packId) => { setActiveStudyPack(packId); setView("studypack"); setTab("practice"); }}
+            onBack={() => window.history.back()}
+            onComplete={(packId) => { setActiveStudyPack(packId); navigate("studypack", "practice"); }}
           />
         )}
         {view === "studypack" && (
           <StudyPack
             studyPackId={activeStudyPack}
-            onBack={() => { setView("home"); setTab("home"); }}
-            onPractice={(packId) => { setActiveStudyPack(packId); setView("practice"); }}
+            onBack={() => window.history.back()}
+            onPractice={(packId) => { setActiveStudyPack(packId); navigate("practice"); }}
           />
         )}
         {view === "practice" && (
           <Practice
             studyPackId={activeStudyPack}
-            onBack={() => setView("studypack")}
-            onFinish={() => setView("examfocus")}
+            onBack={() => window.history.back()}
+            onFinish={() => navigate("examfocus")}
           />
         )}
         {view === "examfocus" && (
           <ExamFocus
-            onBack={() => { setView("home"); setTab("home"); }}
-            onPractice={() => activeStudyPack && setView("practice")}
+            onBack={() => window.history.back()}
+            onPractice={() => activeStudyPack && navigate("practice")}
           />
         )}
         {view === "profile" && <Profile />}
         {view === "materials" && (
           <Materials
-            onUpload={() => setView("upload")}
-            onOpenPack={(packId) => { setActiveStudyPack(packId); setView("studypack"); setTab("practice"); }}
+            onUpload={() => navigate("upload")}
+            onOpenPack={(packId) => { setActiveStudyPack(packId); navigate("studypack", "practice"); }}
           />
         )}
       </div>
