@@ -32,6 +32,7 @@ export const Profile = () => {
   const [name, setName] = useState("");
   const [course, setCourse] = useState("");
   const [email, setEmail] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stats, setStats] = useState({ packs: 0, attempts: 0, correct: 0, materials: 0 });
 
   useEffect(() => { applyTheme(dark); }, [dark]);
@@ -42,11 +43,12 @@ export const Profile = () => {
     setEmail(user.email ?? "");
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name, course_code")
+      .select("display_name, course_code, avatar_url")
       .eq("id", user.id)
       .maybeSingle();
     setName(profile?.display_name ?? user.email?.split("@")[0] ?? "");
     setCourse(profile?.course_code ?? "");
+    setAvatarUrl(profile?.avatar_url ?? null);
   };
 
   useEffect(() => {
@@ -71,7 +73,7 @@ export const Profile = () => {
   if (screen === "help") return <HelpScreen onBack={() => setScreen("main")} />;
   if (screen === "password") return <PasswordScreen onBack={() => setScreen("settings")} />;
   if (screen === "notifications") return <NotificationsScreen onBack={() => setScreen("settings")} />;
-  if (screen === "editprofile") return <EditProfileScreen onBack={() => setScreen("settings")} initialName={name} initialCourse={course} email={email} onSaved={loadProfile} />;
+  if (screen === "editprofile") return <EditProfileScreen onBack={() => setScreen("settings")} initialName={name} initialCourse={course} initialAvatarUrl={avatarUrl} email={email} onSaved={loadProfile} />;
   if (screen === "email") return <EmailPreferencesScreen onBack={() => setScreen("settings")} />;
   if (screen === "language") return <LanguageScreen onBack={() => setScreen("settings")} />;
   if (screen === "downloads") return <DownloadManagementScreen onBack={() => setScreen("settings")} />;
@@ -98,9 +100,17 @@ export const Profile = () => {
           {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
         <div className="relative flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-white/30 backdrop-blur flex items-center justify-center text-2xl font-bold ring-4 ring-white/20 relative">
-            {initials}
-            <button className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white text-primary flex items-center justify-center shadow-md tap-scale" aria-label="Edit avatar">
+          <div className="h-16 w-16 rounded-full bg-white/30 backdrop-blur flex items-center justify-center text-2xl font-bold ring-4 ring-white/20 relative overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={name || "Profile"} className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span>{initials}</span>
+            )}
+            <button
+              onClick={() => setScreen("editprofile")}
+              className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white text-primary flex items-center justify-center shadow-md tap-scale z-10"
+              aria-label="Edit avatar"
+            >
               <Pencil className="h-3 w-3" />
             </button>
           </div>
@@ -634,10 +644,21 @@ const profileSchema = z.object({
 });
 
 const EditProfileScreen = ({
-  onBack, initialName, initialCourse, email, onSaved,
-}: { onBack: () => void; initialName: string; initialCourse: string; email: string; onSaved: () => void | Promise<void> }) => {
+  onBack, initialName, initialCourse, initialAvatarUrl, email, onSaved,
+}: {
+  onBack: () => void;
+  initialName: string;
+  initialCourse: string;
+  initialAvatarUrl: string | null;
+  email: string;
+  onSaved: () => void | Promise<void>;
+}) => {
   const [displayName, setDisplayName] = useState(initialName);
   const [courseCode, setCourseCode] = useState(initialCourse);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
+  const [avatarBusy, setAvatarBusy] = useState<"upload" | "remove" | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [errors, setErrors] = useState<{ display_name?: string; course_code?: string; form?: string }>({});
   const [status, setStatus] = useState<"idle" | "pending" | "saving" | "saved" | "error">("idle");
 
@@ -646,6 +667,111 @@ const EditProfileScreen = ({
   const debounceRef = useRef<number | null>(null);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const savedTimerRef = useRef<number | null>(null);
+
+  const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+
+  const onPickAvatar = () => {
+    setAvatarError(null);
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError("Please choose a PNG, JPG, WEBP, or GIF image.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      setAvatarError("Image must be 5 MB or smaller.");
+      return;
+    }
+
+    setAvatarBusy("upload");
+    setAvatarError(null);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setAvatarBusy(null);
+      setAvatarError("You're not signed in.");
+      return;
+    }
+
+    const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { cacheControl: "3600", upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      setAvatarBusy(null);
+      setAvatarError(uploadError.message);
+      return;
+    }
+
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    // Cache-bust so the new avatar shows immediately.
+    const publicUrl = `${pub.publicUrl}?v=${Date.now()}`;
+
+    const { error: dbError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+
+    if (dbError) {
+      setAvatarBusy(null);
+      setAvatarError(dbError.message);
+      return;
+    }
+
+    setAvatarUrl(publicUrl);
+    setAvatarBusy(null);
+    toast({ title: "Profile photo updated" });
+    await onSaved();
+  };
+
+  const removeAvatar = async () => {
+    if (!avatarUrl) return;
+    setAvatarBusy("remove");
+    setAvatarError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setAvatarBusy(null);
+      setAvatarError("You're not signed in.");
+      return;
+    }
+
+    // Best-effort: remove the file too. Extract the storage path from the URL.
+    try {
+      const marker = "/avatars/";
+      const idx = avatarUrl.indexOf(marker);
+      if (idx !== -1) {
+        const storagePath = avatarUrl.slice(idx + marker.length).split("?")[0];
+        if (storagePath.startsWith(`${user.id}/`)) {
+          await supabase.storage.from("avatars").remove([storagePath]);
+        }
+      }
+    } catch { /* noop */ }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+
+    if (error) {
+      setAvatarBusy(null);
+      setAvatarError(error.message);
+      return;
+    }
+    setAvatarUrl(null);
+    setAvatarBusy(null);
+    toast({ title: "Profile photo removed" });
+    await onSaved();
+  };
 
   const validate = (name: string, course: string): { ok: boolean; errs: typeof errors } => {
     const result = profileSchema.safeParse({ display_name: name, course_code: course });
@@ -772,10 +898,53 @@ const EditProfileScreen = ({
     <div className="animate-fade-in">
       <SubHeader title="Edit Profile" onBack={onBack} />
       <div className="px-5">
-        <div className="flex justify-center py-4">
-          <div className="h-20 w-20 rounded-full gradient-primary flex items-center justify-center text-white text-2xl font-bold shadow-glow">
-            {(displayName || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
-          </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          onChange={handleAvatarFile}
+          className="hidden"
+        />
+        <div className="flex flex-col items-center py-4">
+          <button
+            type="button"
+            onClick={onPickAvatar}
+            disabled={!!avatarBusy}
+            className="relative h-24 w-24 rounded-full gradient-primary flex items-center justify-center text-white text-3xl font-bold shadow-glow overflow-hidden tap-scale disabled:opacity-70"
+            aria-label={avatarUrl ? "Change profile photo" : "Upload profile photo"}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span>{(displayName || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</span>
+            )}
+            <div className="absolute bottom-0 inset-x-0 h-7 bg-black/40 backdrop-blur-sm flex items-center justify-center text-[10px] font-semibold tracking-wide uppercase">
+              {avatarBusy === "upload" ? (
+                <span className="inline-flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Uploading</span>
+              ) : (
+                <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3" /> {avatarUrl ? "Change" : "Add photo"}</span>
+              )}
+            </div>
+          </button>
+          {avatarUrl && (
+            <button
+              type="button"
+              onClick={removeAvatar}
+              disabled={!!avatarBusy}
+              className="mt-3 text-xs font-semibold text-destructive tap-scale disabled:opacity-50 inline-flex items-center gap-1.5"
+            >
+              {avatarBusy === "remove" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+              Remove photo
+            </button>
+          )}
+          {avatarError && (
+            <p className="mt-2 text-xs text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" /> {avatarError}
+            </p>
+          )}
+          {!avatarError && !avatarUrl && (
+            <p className="mt-2 text-[11px] text-muted-foreground">PNG, JPG, WEBP or GIF · up to 5 MB</p>
+          )}
         </div>
 
         <div className="flex justify-end mb-2 h-4">
