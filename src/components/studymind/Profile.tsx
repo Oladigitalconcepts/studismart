@@ -952,3 +952,365 @@ const LogoutScreen = ({ onCancel }: { onCancel: () => void }) => {
     </div>
   );
 };
+
+// ---------- Email Preferences ----------
+
+type EmailPrefs = {
+  email_weekly_digest: boolean;
+  email_product_updates: boolean;
+  email_study_tips: boolean;
+  email_security_alerts: boolean;
+};
+
+const DEFAULT_EMAIL_PREFS: EmailPrefs = {
+  email_weekly_digest: true,
+  email_product_updates: true,
+  email_study_tips: false,
+  email_security_alerts: true,
+};
+
+const EmailPreferencesScreen = ({ onBack }: { onBack: () => void }) => {
+  const [prefs, setPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL_PREFS);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+      setEmail(user.email ?? "");
+      const { data } = await supabase
+        .from("profiles")
+        .select("email_weekly_digest, email_product_updates, email_study_tips, email_security_alerts")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        setPrefs({
+          email_weekly_digest: data.email_weekly_digest ?? true,
+          email_product_updates: data.email_product_updates ?? true,
+          email_study_tips: data.email_study_tips ?? false,
+          email_security_alerts: data.email_security_alerts ?? true,
+        });
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const save = async (patch: Partial<EmailPrefs>) => {
+    const next = { ...prefs, ...patch };
+    setPrefs(next);
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    setSaving(false);
+    if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+  };
+
+  const unsubscribeAll = async () => {
+    await save({
+      email_weekly_digest: false,
+      email_product_updates: false,
+      email_study_tips: false,
+    });
+    toast({ title: "Unsubscribed", description: "You'll still receive security alerts." });
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <SubHeader title="Email Preferences" onBack={onBack} />
+      <div className="px-5 space-y-6 pb-6">
+        {loading ? (
+          <p className="text-sm text-muted-foreground text-center py-10">Loading…</p>
+        ) : (
+          <>
+            <div className="rounded-2xl bg-primary-soft p-4 flex items-center gap-3">
+              <Mail className="h-5 w-5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Sending to</p>
+                <p className="text-sm font-semibold truncate">{email || "—"}</p>
+              </div>
+            </div>
+
+            <Section title="Updates">
+              <ToggleRow icon={Sparkles} label="Weekly progress digest" checked={prefs.email_weekly_digest} onChange={(v) => save({ email_weekly_digest: v })} />
+              <ToggleRow icon={Bell} label="Product updates & new features" checked={prefs.email_product_updates} onChange={(v) => save({ email_product_updates: v })} />
+              <ToggleRow icon={Brain} label="Study tips & learning insights" checked={prefs.email_study_tips} onChange={(v) => save({ email_study_tips: v })} />
+            </Section>
+
+            <Section title="Required">
+              <ToggleRow icon={Lock} label="Account & security alerts" checked={prefs.email_security_alerts} onChange={(v) => save({ email_security_alerts: v })} />
+              <p className="px-4 py-2 text-[11px] text-muted-foreground">
+                We strongly recommend keeping security alerts on so we can notify you of sign-ins and password changes.
+              </p>
+            </Section>
+
+            <Button onClick={unsubscribeAll} variant="outline" className="w-full h-11 rounded-2xl">
+              Unsubscribe from all marketing emails
+            </Button>
+
+            {saving && <p className="text-xs text-muted-foreground text-center">Saving…</p>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ---------- Language ----------
+
+const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
+  const [selected, setSelected] = useState<string>("en");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+      const { data } = await supabase
+        .from("profiles").select("language").eq("id", user.id).maybeSingle();
+      if (!cancelled) {
+        setSelected(data?.language ?? "en");
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const choose = async (code: string) => {
+    if (code === selected) return;
+    setSaving(code);
+    const prev = selected;
+    setSelected(code);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(null); return; }
+    const { error } = await supabase.from("profiles").update({ language: code }).eq("id", user.id);
+    setSaving(null);
+    if (error) {
+      setSelected(prev);
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Language updated", description: LANGUAGES.find((l) => l.code === code)?.label });
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <SubHeader title="Language" onBack={onBack} />
+      <div className="px-5 pb-6">
+        {loading ? (
+          <p className="text-sm text-muted-foreground text-center py-10">Loading…</p>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-3">Choose your preferred language for the app interface.</p>
+            <div className="rounded-2xl bg-card border border-border divide-y divide-border overflow-hidden">
+              {LANGUAGES.map((l) => {
+                const active = selected === l.code;
+                const isSaving = saving === l.code;
+                return (
+                  <button
+                    key={l.code}
+                    onClick={() => choose(l.code)}
+                    disabled={!!saving}
+                    className="w-full px-4 py-3 flex items-center gap-3 tap-scale text-left disabled:opacity-70"
+                  >
+                    <Globe className="h-5 w-5 text-primary" />
+                    <span className="flex-1 text-sm font-medium">{l.label}</span>
+                    <span className="text-[11px] text-muted-foreground uppercase">{l.code}</span>
+                    {active && !isSaving && <CheckCircle2 className="h-5 w-5 text-success" />}
+                    {isSaving && <span className="text-[11px] text-muted-foreground">Saving…</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ---------- Download Management ----------
+
+interface DownloadedItem {
+  id: string;
+  title: string;
+  created_at: string;
+  bytes: number;
+  questionCount: number;
+}
+
+const DownloadManagementScreen = ({ onBack }: { onBack: () => void }) => {
+  const [items, setItems] = useState<DownloadedItem[]>([]);
+  const [totalBytes, setTotalBytes] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const loadDownloads = () => {
+    setLoading(true);
+    const found: DownloadedItem[] = [];
+    let total = 0;
+    try {
+      // Walk the cache and look for cached studypack/questions entries.
+      const packs: Record<string, { bytes: number; pack: any }> = {};
+      const questionBytes: Record<string, { bytes: number; count: number }> = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith("studymind-cache-")) continue;
+        const v = localStorage.getItem(k) ?? "";
+        const bytes = (k.length + v.length) * 2;
+        total += bytes;
+
+        const studyMatch = k.match(/:studypack:([^:]+)$/);
+        if (studyMatch) {
+          try {
+            const parsed = JSON.parse(v);
+            packs[studyMatch[1]] = { bytes, pack: parsed };
+          } catch { /* noop */ }
+          continue;
+        }
+        const qMatch = k.match(/:questions:([^:]+)$/);
+        if (qMatch) {
+          try {
+            const parsed = JSON.parse(v);
+            questionBytes[qMatch[1]] = {
+              bytes,
+              count: Array.isArray(parsed) ? parsed.length : 0,
+            };
+          } catch { /* noop */ }
+        }
+      }
+
+      for (const [id, info] of Object.entries(packs)) {
+        if (id === "latest") continue;
+        const q = questionBytes[id];
+        const title = info.pack?.material?.title ?? info.pack?.pack?.summary?.slice(0, 40) ?? "Study Pack";
+        found.push({
+          id,
+          title,
+          created_at: info.pack?.pack?.created_at ?? new Date().toISOString(),
+          bytes: info.bytes + (q?.bytes ?? 0),
+          questionCount: q?.count ?? 0,
+        });
+      }
+    } catch { /* noop */ }
+    found.sort((a, b) => b.bytes - a.bytes);
+    setItems(found);
+    setTotalBytes(total);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadDownloads(); }, []);
+
+  const removeItem = async (id: string) => {
+    setRemovingId(id);
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        if (
+          k.startsWith("studymind-cache-") &&
+          (k.endsWith(`:studypack:${id}`) || k.endsWith(`:questions:${id}`))
+        ) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch { /* noop */ }
+    loadDownloads();
+    setRemovingId(null);
+    toast({ title: "Removed from device" });
+  };
+
+  const removeAll = () => {
+    items.forEach((i) => {
+      try {
+        for (let idx = localStorage.length - 1; idx >= 0; idx--) {
+          const k = localStorage.key(idx);
+          if (!k) continue;
+          if (k.endsWith(`:studypack:${i.id}`) || k.endsWith(`:questions:${i.id}`)) {
+            localStorage.removeItem(k);
+          }
+        }
+      } catch { /* noop */ }
+    });
+    loadDownloads();
+    toast({ title: "All downloads removed" });
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <SubHeader title="Download Management" onBack={onBack} />
+      <div className="px-5 pb-6 space-y-5">
+        <div className="rounded-2xl gradient-primary p-5 text-white shadow-elevated">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+              <HardDrive className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs text-white/80">Stored on this device</p>
+              <p className="text-2xl font-bold">{formatBytes(totalBytes)}</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-white/80 mt-3">
+            Downloaded study packs let you review summaries and practice questions without an internet connection.
+          </p>
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Scanning device…</p>
+        ) : items.length === 0 ? (
+          <div className="rounded-2xl bg-card border border-border p-6 text-center">
+            <Download className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm font-semibold">No downloads yet</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Open a study pack while online to make it available offline.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {items.length} item{items.length === 1 ? "" : "s"}
+              </h3>
+              <button onClick={removeAll} className="text-xs font-semibold text-destructive tap-scale">
+                Remove all
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {items.map((it) => (
+                <div key={it.id} className="rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{it.title}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {it.questionCount} question{it.questionCount === 1 ? "" : "s"} · {formatBytes(it.bytes)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeItem(it.id)}
+                    disabled={removingId === it.id}
+                    className="h-9 w-9 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center tap-scale disabled:opacity-50"
+                    aria-label="Remove download"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
