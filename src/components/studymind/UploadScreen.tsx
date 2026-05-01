@@ -174,7 +174,7 @@ export const UploadScreen = ({ onBack, onComplete }: Props) => {
               {file ? <FileText className="h-7 w-7 text-primary" /> : <UploadCloud className="h-7 w-7 text-primary" />}
             </div>
             <p className="text-sm font-medium">{file ? file.name : "Tap to choose a file"}</p>
-            <p className="text-[11px] text-muted-foreground mt-2">PDF, DOCX, TXT — text files work best</p>
+            <p className="text-[11px] text-muted-foreground mt-2">PDF, DOCX, TXT — text is extracted automatically</p>
           </div>
         </label>
 
