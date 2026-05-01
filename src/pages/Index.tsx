@@ -10,6 +10,7 @@ import { Profile } from "@/components/studymind/Profile";
 import { Materials } from "@/components/studymind/Materials";
 import { BottomNav, type Screen } from "@/components/studymind/BottomNav";
 import { InstallPrompt } from "@/components/studymind/InstallPrompt";
+import { OfflineBanner } from "@/components/studymind/OfflineBanner";
 import { useSession } from "@/hooks/useSession";
 import { Loader2 } from "lucide-react";
 
@@ -64,6 +65,7 @@ const Index = () => {
 
   return (
     <main className="screen-shell">
+      <OfflineBanner />
       <div key={view} className="page-transition">
         {(view === "splash" || view === "home" || view === "auth") && (
           <Dashboard
