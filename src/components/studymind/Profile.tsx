@@ -73,7 +73,7 @@ export const Profile = () => {
   if (screen === "help") return <HelpScreen onBack={() => setScreen("main")} />;
   if (screen === "password") return <PasswordScreen onBack={() => setScreen("settings")} />;
   if (screen === "notifications") return <NotificationsScreen onBack={() => setScreen("settings")} />;
-  if (screen === "editprofile") return <EditProfileScreen onBack={() => setScreen("settings")} initialName={name} initialCourse={course} email={email} onSaved={loadProfile} />;
+  if (screen === "editprofile") return <EditProfileScreen onBack={() => setScreen("settings")} initialName={name} initialCourse={course} initialAvatarUrl={avatarUrl} email={email} onSaved={loadProfile} />;
   if (screen === "email") return <EmailPreferencesScreen onBack={() => setScreen("settings")} />;
   if (screen === "language") return <LanguageScreen onBack={() => setScreen("settings")} />;
   if (screen === "downloads") return <DownloadManagementScreen onBack={() => setScreen("settings")} />;
@@ -100,9 +100,17 @@ export const Profile = () => {
           {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
         <div className="relative flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-white/30 backdrop-blur flex items-center justify-center text-2xl font-bold ring-4 ring-white/20 relative">
-            {initials}
-            <button className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white text-primary flex items-center justify-center shadow-md tap-scale" aria-label="Edit avatar">
+          <div className="h-16 w-16 rounded-full bg-white/30 backdrop-blur flex items-center justify-center text-2xl font-bold ring-4 ring-white/20 relative overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={name || "Profile"} className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span>{initials}</span>
+            )}
+            <button
+              onClick={() => setScreen("editprofile")}
+              className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-white text-primary flex items-center justify-center shadow-md tap-scale z-10"
+              aria-label="Edit avatar"
+            >
               <Pencil className="h-3 w-3" />
             </button>
           </div>
