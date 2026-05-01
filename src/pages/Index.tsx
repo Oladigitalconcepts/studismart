@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Splash } from "@/components/studymind/Splash";
 import { Auth } from "@/components/studymind/Auth";
 import { Dashboard } from "@/components/studymind/Dashboard";
