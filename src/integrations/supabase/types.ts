@@ -128,7 +128,12 @@ export type Database = {
           course_code: string | null
           created_at: string
           display_name: string | null
+          email_product_updates: boolean
+          email_security_alerts: boolean
+          email_study_tips: boolean
+          email_weekly_digest: boolean
           id: string
+          language: string
           notify_new_features: boolean
           notify_practice_streaks: boolean
           notify_study_reminders: boolean
@@ -141,7 +146,12 @@ export type Database = {
           course_code?: string | null
           created_at?: string
           display_name?: string | null
+          email_product_updates?: boolean
+          email_security_alerts?: boolean
+          email_study_tips?: boolean
+          email_weekly_digest?: boolean
           id: string
+          language?: string
           notify_new_features?: boolean
           notify_practice_streaks?: boolean
           notify_study_reminders?: boolean
@@ -154,7 +164,12 @@ export type Database = {
           course_code?: string | null
           created_at?: string
           display_name?: string | null
+          email_product_updates?: boolean
+          email_security_alerts?: boolean
+          email_study_tips?: boolean
+          email_weekly_digest?: boolean
           id?: string
+          language?: string
           notify_new_features?: boolean
           notify_practice_streaks?: boolean
           notify_study_reminders?: boolean
