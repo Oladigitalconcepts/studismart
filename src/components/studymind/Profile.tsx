@@ -686,6 +686,70 @@ const EditProfileScreen = ({
   const [errors, setErrors] = useState<{ display_name?: string; course_code?: string; form?: string }>({});
   const [status, setStatus] = useState<"idle" | "pending" | "saving" | "saved" | "error">("idle");
 
+  // Recently used course codes (extracted from the user's materials + their saved profile).
+  const [recentCourses, setRecentCourses] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const courseInputRef = useRef<HTMLInputElement | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      // Pull the last 25 material titles + the saved profile course code.
+      const [{ data: materials }, { data: profile }] = await Promise.all([
+        supabase
+          .from("materials")
+          .select("title, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(25),
+        supabase.from("profiles").select("course_code").eq("id", user.id).maybeSingle(),
+      ]);
+      if (cancelled) return;
+      const seen = new Map<string, number>(); // code -> latest timestamp
+      for (const m of materials ?? []) {
+        const ts = new Date(m.created_at).getTime();
+        for (const code of extractCourseCodes(m.title ?? "")) {
+          const norm = normalizeCourseCode(code);
+          if (!norm) continue;
+          const prev = seen.get(norm);
+          if (prev === undefined || ts > prev) seen.set(norm, ts);
+        }
+      }
+      if (profile?.course_code) {
+        const norm = normalizeCourseCode(profile.course_code);
+        if (norm && !seen.has(norm)) seen.set(norm, 0);
+      }
+      const ranked = Array.from(seen.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([c]) => c)
+        .slice(0, 8);
+      setRecentCourses(ranked);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Close the suggestions dropdown when clicking elsewhere.
+  useEffect(() => {
+    const onDocPointer = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (suggestionsRef.current?.contains(t)) return;
+      if (courseInputRef.current?.contains(t)) return;
+      setShowSuggestions(false);
+    };
+    document.addEventListener("mousedown", onDocPointer);
+    return () => document.removeEventListener("mousedown", onDocPointer);
+  }, []);
+
+  const filteredSuggestions = useMemo(() => {
+    const q = normalizeCourseCode(courseCode);
+    if (!recentCourses.length) return [];
+    if (!q) return recentCourses;
+    return recentCourses.filter((c) => c.includes(q) && c !== q).slice(0, 6);
+  }, [courseCode, recentCourses]);
+
   // Track the most recently persisted values so we don't write redundant updates.
   const savedRef = useRef({ name: initialName, course: initialCourse });
   const debounceRef = useRef<number | null>(null);
