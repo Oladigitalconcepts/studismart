@@ -96,15 +96,33 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    touch-action: manipulation;
   }
 
   html, body, #root {
     @apply h-full;
+    overscroll-behavior-y: none;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+    /* iOS won't zoom on focus when font-size >= 16px */
+    font-size: 16px;
   }
 }
 
@@ -127,12 +145,27 @@
   .transition-base { transition: var(--transition-base); }
   .tap-scale { @apply active:scale-[0.97] transition-transform duration-150; }
 
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 @layer components {
   .screen-shell {
-    @apply mx-auto w-full max-w-md min-h-screen bg-background relative pb-24;
+    @apply mx-auto w-full max-w-md min-h-[100svh] bg-background relative;
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+
+  .page-transition {
+    animation: page-enter 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform, opacity;
   }
 }
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
