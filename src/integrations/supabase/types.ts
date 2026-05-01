@@ -129,6 +129,12 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          notify_new_features: boolean
+          notify_practice_streaks: boolean
+          notify_study_reminders: boolean
+          notify_weekly_summary: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
           updated_at: string
         }
         Insert: {
@@ -136,6 +142,12 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id: string
+          notify_new_features?: boolean
+          notify_practice_streaks?: boolean
+          notify_study_reminders?: boolean
+          notify_weekly_summary?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           updated_at?: string
         }
         Update: {
@@ -143,6 +155,12 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          notify_new_features?: boolean
+          notify_practice_streaks?: boolean
+          notify_study_reminders?: boolean
+          notify_weekly_summary?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -672,37 +672,170 @@ const EditProfileScreen = ({
   );
 };
 
+type NotifPrefs = {
+  notify_study_reminders: boolean;
+  notify_new_features: boolean;
+  notify_practice_streaks: boolean;
+  notify_weekly_summary: boolean;
+  quiet_hours_start: string | null;
+  quiet_hours_end: string | null;
+};
+
+const DEFAULT_PREFS: NotifPrefs = {
+  notify_study_reminders: true,
+  notify_new_features: true,
+  notify_practice_streaks: true,
+  notify_weekly_summary: false,
+  quiet_hours_start: null,
+  quiet_hours_end: null,
+};
+
 const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
-  const [prefs, setPrefs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("studymind-notif") || "{}"); } catch { return {}; }
-  });
-  const set = (k: string, v: boolean) => {
-    const next = { ...prefs, [k]: v };
+  const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [quietEnabled, setQuietEnabled] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
+    typeof Notification !== "undefined" ? Notification.permission : "unsupported"
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+      const { data } = await supabase
+        .from("profiles")
+        .select("notify_study_reminders, notify_new_features, notify_practice_streaks, notify_weekly_summary, quiet_hours_start, quiet_hours_end")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        setPrefs({
+          notify_study_reminders: data.notify_study_reminders ?? true,
+          notify_new_features: data.notify_new_features ?? true,
+          notify_practice_streaks: data.notify_practice_streaks ?? true,
+          notify_weekly_summary: data.notify_weekly_summary ?? false,
+          quiet_hours_start: data.quiet_hours_start ?? null,
+          quiet_hours_end: data.quiet_hours_end ?? null,
+        });
+        setQuietEnabled(!!(data.quiet_hours_start && data.quiet_hours_end));
+      }
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const save = async (patch: Partial<NotifPrefs>) => {
+    const next = { ...prefs, ...patch };
     setPrefs(next);
-    localStorage.setItem("studymind-notif", JSON.stringify(next));
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSaving(false); return; }
+    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    }
   };
-  const get = (k: string, def = true) => prefs[k] ?? def;
+
+  const requestPush = async () => {
+    if (typeof Notification === "undefined") {
+      toast({ title: "Not supported", description: "This device doesn't support notifications." });
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setPermission(result);
+    if (result === "granted") {
+      toast({ title: "Notifications enabled" });
+    } else {
+      toast({ title: "Permission denied", description: "Enable notifications in your browser settings." });
+    }
+  };
+
+  const onTimeChange = (key: "quiet_hours_start" | "quiet_hours_end", value: string) => {
+    save({ [key]: value || null } as Partial<NotifPrefs>);
+  };
+
+  const toggleQuiet = (v: boolean) => {
+    setQuietEnabled(v);
+    if (!v) save({ quiet_hours_start: null, quiet_hours_end: null });
+    else if (!prefs.quiet_hours_start && !prefs.quiet_hours_end) {
+      save({ quiet_hours_start: "22:00", quiet_hours_end: "07:00" });
+    }
+  };
 
   return (
     <div className="animate-fade-in">
       <SubHeader title="Notifications" onBack={onBack} />
       <div className="px-5 space-y-6 pb-6">
-        <Section title="">
-          <ToggleRow icon={Bell} label="Push Notifications" checked={get("push")} onChange={(v) => set("push", v)} />
-        </Section>
+        {loading ? (
+          <p className="text-sm text-muted-foreground text-center py-10">Loading preferences…</p>
+        ) : (
+          <>
+            <Section title="Device">
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Bell className="h-5 w-5 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">Push Notifications</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {permission === "granted" ? "Allowed on this device" :
+                       permission === "denied" ? "Blocked — change in browser settings" :
+                       permission === "unsupported" ? "Not supported on this device" :
+                       "Tap allow to enable"}
+                    </p>
+                  </div>
+                </div>
+                {permission !== "granted" && permission !== "unsupported" && (
+                  <Button size="sm" onClick={requestPush} className="rounded-xl">Allow</Button>
+                )}
+                {permission === "granted" && <span className="text-xs text-primary font-medium">On</span>}
+              </div>
+            </Section>
 
-        <Section title="Notify me about">
-          <ToggleRow icon={Flame} label="Daily Reminders" checked={get("daily")} onChange={(v) => set("daily", v)} />
-          <ToggleRow icon={Sparkles} label="New Content" checked={get("content")} onChange={(v) => set("content", v)} />
-          <ToggleRow icon={Award} label="Achievements" checked={get("ach")} onChange={(v) => set("ach", v)} />
-          <ToggleRow icon={Brain} label="Tips & Updates" checked={get("tips", false)} onChange={(v) => set("tips", v)} />
-        </Section>
+            <Section title="Notify me about">
+              <ToggleRow icon={Flame} label="Study reminders" checked={prefs.notify_study_reminders} onChange={(v) => save({ notify_study_reminders: v })} />
+              <ToggleRow icon={Award} label="Practice streaks" checked={prefs.notify_practice_streaks} onChange={(v) => save({ notify_practice_streaks: v })} />
+              <ToggleRow icon={Sparkles} label="New features" checked={prefs.notify_new_features} onChange={(v) => save({ notify_new_features: v })} />
+              <ToggleRow icon={Brain} label="Weekly summary" checked={prefs.notify_weekly_summary} onChange={(v) => save({ notify_weekly_summary: v })} />
+            </Section>
 
-        <Section title="Quiet Hours">
-          <Row icon={Moon} label="From" trailing={<span className="text-xs text-muted-foreground">10:00 PM</span>} onClick={() => toast({ title: "Coming soon" })} />
-          <Row icon={Sun} label="To" trailing={<span className="text-xs text-muted-foreground">7:00 AM</span>} onClick={() => toast({ title: "Coming soon" })} />
-          <ToggleRow icon={Bell} label="No notifications during quiet hours" checked={get("quiet")} onChange={(v) => set("quiet", v)} />
-        </Section>
+            <Section title="Quiet Hours">
+              <ToggleRow icon={Bell} label="Pause notifications during set hours" checked={quietEnabled} onChange={toggleQuiet} />
+              {quietEnabled && (
+                <>
+                  <div className="flex items-center justify-between p-4 border-t border-border/40">
+                    <div className="flex items-center gap-3">
+                      <Moon className="h-5 w-5 text-primary" />
+                      <span className="font-medium text-sm">From</span>
+                    </div>
+                    <Input
+                      type="time"
+                      value={prefs.quiet_hours_start ?? ""}
+                      onChange={(e) => onTimeChange("quiet_hours_start", e.target.value)}
+                      className="w-32 h-9 rounded-lg"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border-t border-border/40">
+                    <div className="flex items-center gap-3">
+                      <Sun className="h-5 w-5 text-primary" />
+                      <span className="font-medium text-sm">To</span>
+                    </div>
+                    <Input
+                      type="time"
+                      value={prefs.quiet_hours_end ?? ""}
+                      onChange={(e) => onTimeChange("quiet_hours_end", e.target.value)}
+                      className="w-32 h-9 rounded-lg"
+                    />
+                  </div>
+                </>
+              )}
+            </Section>
+
+            {saving && <p className="text-xs text-muted-foreground text-center">Saving…</p>}
+          </>
+        )}
       </div>
     </div>
   );
