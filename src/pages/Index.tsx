@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Splash } from "@/components/studymind/Splash";
+import { Auth } from "@/components/studymind/Auth";
 import { Dashboard } from "@/components/studymind/Dashboard";
 import { UploadScreen } from "@/components/studymind/UploadScreen";
 import { StudyPack } from "@/components/studymind/StudyPack";
@@ -8,12 +9,49 @@ import { ExamFocus } from "@/components/studymind/ExamFocus";
 import { Profile } from "@/components/studymind/Profile";
 import { Materials } from "@/components/studymind/Materials";
 import { BottomNav, type Screen } from "@/components/studymind/BottomNav";
+import { useSession } from "@/hooks/useSession";
+import { Loader2 } from "lucide-react";
 
-type View = "splash" | "home" | "upload" | "studypack" | "practice" | "examfocus" | "profile" | "materials" | "practice-tab";
+type View =
+  | "splash"
+  | "auth"
+  | "home"
+  | "upload"
+  | "studypack"
+  | "practice"
+  | "examfocus"
+  | "profile"
+  | "materials";
 
 const Index = () => {
+  const { user, loading } = useSession();
   const [view, setView] = useState<View>("splash");
   const [tab, setTab] = useState<Screen>("home");
+  const [activeStudyPack, setActiveStudyPack] = useState<string | null>(null);
+
+  if (loading) {
+    return (
+      <main className="screen-shell flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </main>
+    );
+  }
+
+  if (view === "splash" && !user) {
+    return (
+      <main className="screen-shell !pb-0">
+        <Splash onStart={() => setView("auth")} />
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="screen-shell !pb-0">
+        <Auth onAuthed={() => setView("home")} />
+      </main>
+    );
+  }
 
   const handleTab = (s: Screen) => {
     setTab(s);
@@ -23,31 +61,49 @@ const Index = () => {
     if (s === "profile") setView("profile");
   };
 
-  if (view === "splash") {
-    return (
-      <main className="screen-shell !pb-0">
-        <Splash onStart={() => setView("home")} />
-      </main>
-    );
-  }
-
   return (
     <main className="screen-shell">
-      {view === "home" && <Dashboard onNavigate={(s) => setView(s)} />}
+      {(view === "splash" || view === "home" || view === "auth") && (
+        <Dashboard
+          onNavigate={(s) => {
+            if (s === "studypack") setActiveStudyPack(null);
+            setView(s);
+          }}
+        />
+      )}
       {view === "upload" && (
-        <UploadScreen onBack={() => setView("home")} onComplete={() => setView("studypack")} />
+        <UploadScreen
+          onBack={() => setView("home")}
+          onComplete={(packId) => { setActiveStudyPack(packId); setView("studypack"); setTab("practice"); }}
+        />
       )}
       {view === "studypack" && (
-        <StudyPack onBack={() => { setView("home"); setTab("home"); }} onPractice={() => setView("practice")} />
+        <StudyPack
+          studyPackId={activeStudyPack}
+          onBack={() => { setView("home"); setTab("home"); }}
+          onPractice={(packId) => { setActiveStudyPack(packId); setView("practice"); }}
+        />
       )}
       {view === "practice" && (
-        <Practice onBack={() => setView("studypack")} onFinish={() => setView("examfocus")} />
+        <Practice
+          studyPackId={activeStudyPack}
+          onBack={() => setView("studypack")}
+          onFinish={() => setView("examfocus")}
+        />
       )}
       {view === "examfocus" && (
-        <ExamFocus onBack={() => { setView("home"); setTab("home"); }} onPractice={() => setView("practice")} />
+        <ExamFocus
+          onBack={() => { setView("home"); setTab("home"); }}
+          onPractice={() => activeStudyPack && setView("practice")}
+        />
       )}
       {view === "profile" && <Profile />}
-      {view === "materials" && <Materials onUpload={() => setView("upload")} />}
+      {view === "materials" && (
+        <Materials
+          onUpload={() => setView("upload")}
+          onOpenPack={(packId) => { setActiveStudyPack(packId); setView("studypack"); setTab("practice"); }}
+        />
+      )}
 
       <BottomNav active={tab} onChange={handleTab} />
     </main>
