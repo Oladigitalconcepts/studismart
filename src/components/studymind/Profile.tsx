@@ -898,10 +898,53 @@ const EditProfileScreen = ({
     <div className="animate-fade-in">
       <SubHeader title="Edit Profile" onBack={onBack} />
       <div className="px-5">
-        <div className="flex justify-center py-4">
-          <div className="h-20 w-20 rounded-full gradient-primary flex items-center justify-center text-white text-2xl font-bold shadow-glow">
-            {(displayName || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
-          </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          onChange={handleAvatarFile}
+          className="hidden"
+        />
+        <div className="flex flex-col items-center py-4">
+          <button
+            type="button"
+            onClick={onPickAvatar}
+            disabled={!!avatarBusy}
+            className="relative h-24 w-24 rounded-full gradient-primary flex items-center justify-center text-white text-3xl font-bold shadow-glow overflow-hidden tap-scale disabled:opacity-70"
+            aria-label={avatarUrl ? "Change profile photo" : "Upload profile photo"}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <span>{(displayName || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</span>
+            )}
+            <div className="absolute bottom-0 inset-x-0 h-7 bg-black/40 backdrop-blur-sm flex items-center justify-center text-[10px] font-semibold tracking-wide uppercase">
+              {avatarBusy === "upload" ? (
+                <span className="inline-flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Uploading</span>
+              ) : (
+                <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3" /> {avatarUrl ? "Change" : "Add photo"}</span>
+              )}
+            </div>
+          </button>
+          {avatarUrl && (
+            <button
+              type="button"
+              onClick={removeAvatar}
+              disabled={!!avatarBusy}
+              className="mt-3 text-xs font-semibold text-destructive tap-scale disabled:opacity-50 inline-flex items-center gap-1.5"
+            >
+              {avatarBusy === "remove" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+              Remove photo
+            </button>
+          )}
+          {avatarError && (
+            <p className="mt-2 text-xs text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" /> {avatarError}
+            </p>
+          )}
+          {!avatarError && !avatarUrl && (
+            <p className="mt-2 text-[11px] text-muted-foreground">PNG, JPG, WEBP or GIF · up to 5 MB</p>
+          )}
         </div>
 
         <div className="flex justify-end mb-2 h-4">
