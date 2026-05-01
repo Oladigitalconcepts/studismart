@@ -47,6 +47,7 @@ const Index = () => {
     { view: "splash", tab: "home" },
   ]);
   const isPoppingRef = useRef(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const pushHistory = useCallback((next: { view: View; tab: Screen }) => {
     const stack = historyRef.current;
