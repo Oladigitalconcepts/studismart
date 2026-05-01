@@ -278,13 +278,13 @@ const AchievementsScreen = ({ onBack, correct, packs, materials }: { onBack: () 
   );
 };
 
-const SettingsScreen = ({ onBack, dark, setDark, onPassword, onNotifications }: { onBack: () => void; dark: boolean; setDark: (v: boolean) => void; onPassword: () => void; onNotifications: () => void }) => {
+const SettingsScreen = ({ onBack, dark, setDark, onPassword, onNotifications, onEditProfile }: { onBack: () => void; dark: boolean; setDark: (v: boolean) => void; onPassword: () => void; onNotifications: () => void; onEditProfile: () => void }) => {
   return (
     <div className="animate-fade-in">
       <SubHeader title="Settings" onBack={onBack} />
       <div className="px-5 space-y-6 pb-6">
         <Section title="Account">
-          <Row icon={UserIcon} label="Edit Profile" onClick={() => toast({ title: "Coming soon" })} />
+          <Row icon={UserIcon} label="Edit Profile" onClick={onEditProfile} />
           <Row icon={KeyRound} label="Change Password" onClick={onPassword} />
           <Row icon={Mail} label="Email Preferences" onClick={() => toast({ title: "Coming soon" })} />
         </Section>
