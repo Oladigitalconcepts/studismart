@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { z } from "zod";
 
 type SubScreen = "main" | "streak" | "achievements" | "settings" | "help" | "logout" | "password" | "notifications";
 
@@ -353,9 +354,24 @@ const HelpScreen = ({ onBack }: { onBack: () => void }) => (
   </div>
 );
 
+const passwordSchema = (current: string) =>
+  z.object({
+    c: z.string().min(1, "Enter your current password"),
+    n: z
+      .string()
+      .min(8, "At least 8 characters")
+      .max(72, "Must be 72 characters or fewer")
+      .regex(/[A-Z]/, "Must include an uppercase letter")
+      .regex(/[0-9!@#$%^&*]/, "Must include a number or symbol")
+      .refine((v) => v !== current, "New password must differ from current"),
+    conf: z.string(),
+  }).refine((d) => d.n === d.conf, { message: "Passwords don't match", path: ["conf"] });
+
 const PasswordScreen = ({ onBack }: { onBack: () => void }) => {
   const [show, setShow] = useState({ c: false, n: false, conf: false });
   const [vals, setVals] = useState({ c: "", n: "", conf: "" });
+  const [errors, setErrors] = useState<{ c?: string; n?: string; conf?: string; form?: string }>({});
+  const [touched, setTouched] = useState<{ c?: boolean; n?: boolean; conf?: boolean }>({});
   const [loading, setLoading] = useState(false);
 
   const checks = {
@@ -364,16 +380,76 @@ const PasswordScreen = ({ onBack }: { onBack: () => void }) => {
     num: /[0-9!@#$%^&*]/.test(vals.n),
   };
 
+  const validate = () => {
+    const result = passwordSchema(vals.c).safeParse(vals);
+    if (result.success) { setErrors({}); return true; }
+    const fieldErrors: typeof errors = {};
+    for (const issue of result.error.issues) {
+      const k = issue.path[0] as "c" | "n" | "conf";
+      if (k && !fieldErrors[k]) fieldErrors[k] = issue.message;
+    }
+    setErrors(fieldErrors);
+    return false;
+  };
+
+  const onChange = (k: "c" | "n" | "conf") => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = { ...vals, [k]: e.target.value };
+    setVals(next);
+    if (touched[k] || errors[k] || errors.form) {
+      const result = passwordSchema(next.c).safeParse(next);
+      if (result.success) setErrors((prev) => ({ ...prev, [k]: undefined, form: undefined }));
+      else {
+        const fieldErr = result.error.issues.find((i) => i.path[0] === k)?.message;
+        setErrors((prev) => ({ ...prev, [k]: fieldErr, form: undefined }));
+      }
+    }
+  };
+
+  const onBlur = (k: "c" | "n" | "conf") => () => {
+    setTouched((t) => ({ ...t, [k]: true }));
+    validate();
+  };
+
   const update = async () => {
-    if (!checks.len || !checks.upper || !checks.num) return toast({ title: "Password doesn't meet requirements", variant: "destructive" });
-    if (vals.n !== vals.conf) return toast({ title: "Passwords don't match", variant: "destructive" });
+    setTouched({ c: true, n: true, conf: true });
+    if (!validate()) return;
     setLoading(true);
+    setErrors((e) => ({ ...e, form: undefined }));
+
+    // Verify current password via reauth attempt
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      setLoading(false);
+      setErrors((e) => ({ ...e, form: "You're not signed in" }));
+      return;
+    }
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: vals.c,
+    });
+    if (verifyError) {
+      setLoading(false);
+      setErrors((e) => ({ ...e, c: "Current password is incorrect" }));
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password: vals.n });
     setLoading(false);
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    toast({ title: "Password updated" });
+    if (error) {
+      setErrors((e) => ({ ...e, form: error.message }));
+      return;
+    }
+    toast({ title: "Password updated successfully" });
     onBack();
   };
+
+  const fields = [
+    { k: "c" as const, label: "Current Password" },
+    { k: "n" as const, label: "New Password" },
+    { k: "conf" as const, label: "Confirm New Password" },
+  ];
+
+  const isValid = !Object.values(errors).some(Boolean) && vals.c && vals.n && vals.conf;
 
   return (
     <div className="animate-fade-in">
@@ -385,27 +461,39 @@ const PasswordScreen = ({ onBack }: { onBack: () => void }) => {
           </div>
         </div>
 
-        {([
-          { k: "c", label: "Current Password" },
-          { k: "n", label: "New Password" },
-          { k: "conf", label: "Confirm New Password" },
-        ] as const).map((f) => (
-          <div key={f.k} className="mb-4">
-            <label className="text-xs font-semibold text-muted-foreground">{f.label}</label>
-            <div className="relative mt-1">
-              <Input
-                type={show[f.k] ? "text" : "password"}
-                value={vals[f.k]}
-                onChange={(e) => setVals((v) => ({ ...v, [f.k]: e.target.value }))}
-                placeholder={`Enter ${f.label.toLowerCase()}`}
-                className="pr-10"
-              />
-              <button type="button" onClick={() => setShow((s) => ({ ...s, [f.k]: !s[f.k] }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-label="Toggle visibility">
-                {show[f.k] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+        {fields.map((f) => {
+          const err = errors[f.k];
+          return (
+            <div key={f.k} className="mb-4">
+              <label className="text-xs font-semibold text-muted-foreground">{f.label}</label>
+              <div className="relative mt-1">
+                <Input
+                  type={show[f.k] ? "text" : "password"}
+                  value={vals[f.k]}
+                  onChange={onChange(f.k)}
+                  onBlur={onBlur(f.k)}
+                  placeholder={`Enter ${f.label.toLowerCase()}`}
+                  aria-invalid={!!err}
+                  aria-describedby={err ? `${f.k}-err` : undefined}
+                  className={`pr-10 ${err ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShow((s) => ({ ...s, [f.k]: !s[f.k] }))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  aria-label="Toggle visibility"
+                >
+                  {show[f.k] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {err && (
+                <p id={`${f.k}-err`} className="mt-1.5 text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" /> {err}
+                </p>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         <div className="rounded-2xl bg-card border border-border p-4 space-y-1.5">
           <p className="text-xs font-semibold mb-1">Password must contain:</p>
@@ -421,7 +509,18 @@ const PasswordScreen = ({ onBack }: { onBack: () => void }) => {
           ))}
         </div>
 
-        <Button onClick={update} disabled={loading} className="w-full mt-6 h-12 rounded-2xl gradient-primary text-white font-semibold">
+        {errors.form && (
+          <div className="mt-4 rounded-xl bg-destructive/10 border border-destructive/30 p-3 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <p className="text-xs text-destructive">{errors.form}</p>
+          </div>
+        )}
+
+        <Button
+          onClick={update}
+          disabled={loading || !isValid}
+          className="w-full mt-6 h-12 rounded-2xl gradient-primary text-white font-semibold disabled:opacity-60"
+        >
           {loading ? "Updating..." : "Update Password"}
         </Button>
       </div>
