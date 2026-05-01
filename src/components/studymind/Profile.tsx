@@ -3,7 +3,7 @@ import {
   Settings as SettingsIcon, Flame, Award, ChevronRight, BookOpen, Layers, CheckCircle2,
   HelpCircle, LogOut, Moon, Sun, ArrowLeft, Trophy, Lock, Eye, EyeOff, Bell, Globe,
   Download, Trash2, User as UserIcon, Mail, KeyRound, MessageCircle, FileQuestion, AlertCircle,
-  Sparkles, Brain, Target, Pencil,
+  Sparkles, Brain, Target, Pencil, FileText, HardDrive,
 } from "lucide-react";
 import { StatusBar } from "./StatusBar";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,8 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { cacheClearForUser } from "@/lib/offlineCache";
 
-type SubScreen = "main" | "streak" | "achievements" | "settings" | "help" | "logout" | "password" | "notifications" | "editprofile";
+type SubScreen =
+  | "main" | "streak" | "achievements" | "settings" | "help" | "logout"
+  | "password" | "notifications" | "editprofile"
+  | "email" | "language" | "downloads";
 
 const THEME_KEY = "studymind-theme";
 
