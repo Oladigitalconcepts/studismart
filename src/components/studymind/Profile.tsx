@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Settings as SettingsIcon, Flame, Award, ChevronRight, BookOpen, Layers, CheckCircle2,
   HelpCircle, LogOut, Moon, Sun, ArrowLeft, Trophy, Lock, Eye, EyeOff, Bell, Globe,
   Download, Trash2, User as UserIcon, Mail, KeyRound, MessageCircle, FileQuestion, AlertCircle,
-  Sparkles, Brain, Target, Pencil, FileText, HardDrive,
+  Sparkles, Brain, Target, Pencil, FileText, HardDrive, Loader2,
 } from "lucide-react";
 import { StatusBar } from "./StatusBar";
 import { supabase } from "@/integrations/supabase/client";
@@ -639,47 +639,133 @@ const EditProfileScreen = ({
   const [displayName, setDisplayName] = useState(initialName);
   const [courseCode, setCourseCode] = useState(initialCourse);
   const [errors, setErrors] = useState<{ display_name?: string; course_code?: string; form?: string }>({});
-  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<"idle" | "pending" | "saving" | "saved" | "error">("idle");
 
-  const dirty = displayName !== initialName || courseCode !== initialCourse;
+  // Track the most recently persisted values so we don't write redundant updates.
+  const savedRef = useRef({ name: initialName, course: initialCourse });
+  const debounceRef = useRef<number | null>(null);
+  const inFlightRef = useRef<Promise<void> | null>(null);
+  const savedTimerRef = useRef<number | null>(null);
 
-  const validate = () => {
-    const result = profileSchema.safeParse({ display_name: displayName, course_code: courseCode });
-    if (result.success) { setErrors({}); return true; }
+  const validate = (name: string, course: string): { ok: boolean; errs: typeof errors } => {
+    const result = profileSchema.safeParse({ display_name: name, course_code: course });
+    if (result.success) return { ok: true, errs: {} };
     const next: typeof errors = {};
     for (const issue of result.error.issues) {
       const k = issue.path[0] as "display_name" | "course_code";
       if (k && !next[k]) next[k] = issue.message;
     }
-    setErrors(next);
-    return false;
+    return { ok: false, errs: next };
   };
 
-  const save = async () => {
-    if (!validate()) return;
-    setSaving(true);
-    setErrors((e) => ({ ...e, form: undefined }));
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setSaving(false);
-      setErrors({ form: "You're not signed in" });
+  const persist = async (name: string, course: string) => {
+    // Wait for any prior save so updates apply in the order the user typed.
+    if (inFlightRef.current) {
+      try { await inFlightRef.current; } catch { /* noop */ }
+    }
+    const run = (async () => {
+      setStatus("saving");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setStatus("error");
+        setErrors((e) => ({ ...e, form: "You're not signed in" }));
+        return;
+      }
+      const payload = {
+        id: user.id,
+        display_name: name.trim(),
+        course_code: course.trim() ? course.trim().toUpperCase() : null,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+      if (error) {
+        setStatus("error");
+        setErrors((e) => ({ ...e, form: error.message }));
+        return;
+      }
+      savedRef.current = { name, course };
+      setErrors((e) => ({ ...e, form: undefined }));
+      setStatus("saved");
+      await onSaved();
+      if (savedTimerRef.current) window.clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = window.setTimeout(() => {
+        setStatus((s) => (s === "saved" ? "idle" : s));
+      }, 1800);
+    })();
+    inFlightRef.current = run;
+    try { await run; } finally {
+      if (inFlightRef.current === run) inFlightRef.current = null;
+    }
+  };
+
+  const scheduleSave = (name: string, course: string) => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    const { ok, errs } = validate(name, course);
+    setErrors((prev) => ({ ...errs, form: prev.form }));
+    const unchanged = name === savedRef.current.name && course === savedRef.current.course;
+    if (!ok || unchanged) {
+      setStatus(unchanged ? "idle" : "pending");
       return;
     }
-    const payload = {
-      id: user.id,
-      display_name: displayName.trim(),
-      course_code: courseCode.trim() ? courseCode.trim().toUpperCase() : null,
-      updated_at: new Date().toISOString(),
+    setStatus("pending");
+    debounceRef.current = window.setTimeout(() => {
+      void persist(name, course);
+    }, 800);
+  };
+
+  // Flush any pending change when leaving the screen so nothing is lost.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        window.clearTimeout(debounceRef.current);
+        const { ok } = validate(displayName, courseCode);
+        const unchanged =
+          displayName === savedRef.current.name && courseCode === savedRef.current.course;
+        if (ok && !unchanged) void persist(displayName, courseCode);
+      }
+      if (savedTimerRef.current) window.clearTimeout(savedTimerRef.current);
     };
-    const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
-    setSaving(false);
-    if (error) {
-      setErrors({ form: error.message });
-      return;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setDisplayName(v);
+    scheduleSave(v, courseCode);
+  };
+
+  const onCourseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setCourseCode(v);
+    scheduleSave(displayName, v);
+  };
+
+  const StatusPill = () => {
+    if (status === "saving") {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+        </span>
+      );
     }
-    toast({ title: "Profile updated" });
-    await onSaved();
-    onBack();
+    if (status === "pending") {
+      return <span className="text-[11px] text-muted-foreground">Unsaved changes…</span>;
+    }
+    if (status === "saved") {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-[11px] text-success">
+          <CheckCircle2 className="h-3 w-3" /> Saved
+        </span>
+      );
+    }
+    if (status === "error") {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-[11px] text-destructive">
+          <AlertCircle className="h-3 w-3" /> Couldn't save
+        </span>
+      );
+    }
+    return <span className="text-[11px] text-muted-foreground">All changes saved</span>;
   };
 
   return (
@@ -692,12 +778,15 @@ const EditProfileScreen = ({
           </div>
         </div>
 
+        <div className="flex justify-end mb-2 h-4">
+          <StatusPill />
+        </div>
+
         <div className="mb-4">
           <label className="text-xs font-semibold text-muted-foreground">Display Name</label>
           <Input
             value={displayName}
-            onChange={(e) => { setDisplayName(e.target.value); if (errors.display_name) setErrors((p) => ({ ...p, display_name: undefined })); }}
-            onBlur={validate}
+            onChange={onNameChange}
             placeholder="e.g. Fayo Adeyemi"
             maxLength={60}
             aria-invalid={!!errors.display_name}
@@ -714,8 +803,7 @@ const EditProfileScreen = ({
           <label className="text-xs font-semibold text-muted-foreground">Course Code</label>
           <Input
             value={courseCode}
-            onChange={(e) => { setCourseCode(e.target.value); if (errors.course_code) setErrors((p) => ({ ...p, course_code: undefined })); }}
-            onBlur={validate}
+            onChange={onCourseChange}
             placeholder="e.g. CSC101"
             maxLength={20}
             aria-invalid={!!errors.course_code}
@@ -744,11 +832,11 @@ const EditProfileScreen = ({
         )}
 
         <Button
-          onClick={save}
-          disabled={saving || !dirty}
-          className="w-full mt-6 h-12 rounded-2xl gradient-primary text-white font-semibold disabled:opacity-60"
+          onClick={onBack}
+          variant="outline"
+          className="w-full mt-6 h-12 rounded-2xl font-semibold"
         >
-          {saving ? "Saving..." : "Save Changes"}
+          Done
         </Button>
       </div>
     </div>
