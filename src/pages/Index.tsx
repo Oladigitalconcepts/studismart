@@ -9,6 +9,8 @@ import { ExamFocus } from "@/components/studymind/ExamFocus";
 import { Profile } from "@/components/studymind/Profile";
 import { Materials } from "@/components/studymind/Materials";
 import { NotificationsCenter } from "@/components/studymind/NotificationsCenter";
+import { Analytics } from "@/components/studymind/Analytics";
+import { Leaderboard } from "@/components/studymind/Leaderboard";
 import { BottomNav, type Screen } from "@/components/studymind/BottomNav";
 import { InstallPrompt } from "@/components/studymind/InstallPrompt";
 import { OfflineBanner } from "@/components/studymind/OfflineBanner";
@@ -37,7 +39,9 @@ type View =
   | "examfocus"
   | "profile"
   | "materials"
-  | "notifications";
+  | "notifications"
+  | "analytics"
+  | "leaderboard";
 
 const Index = () => {
   const { user, loading } = useSession();
@@ -159,8 +163,17 @@ const Index = () => {
       <div key={view} className="page-transition">
         {(view === "splash" || view === "home" || view === "auth") && (
           <Dashboard
-            onNavigate={(s) => {
-              if (s === "studypack") setActiveStudyPack(null);
+            onNavigate={(s, payload) => {
+              if (s === "studypack") {
+                setActiveStudyPack(payload?.studyPackId ?? null);
+              }
+              if (s === "practice") {
+                setActiveStudyPack(payload?.studyPackId ?? activeStudyPack);
+              }
+              if (s === "profile") {
+                navigate("profile", "profile");
+                return;
+              }
               navigate(s as View);
             }}
             onOpenNotifications={() => navigate("notifications")}
@@ -199,6 +212,8 @@ const Index = () => {
             onOpenPack={(packId) => { setActiveStudyPack(packId); navigate("studypack", "practice"); }}
           />
         )}
+        {view === "analytics" && <Analytics onBack={() => window.history.back()} />}
+        {view === "leaderboard" && <Leaderboard onBack={() => window.history.back()} />}
         {view === "notifications" && (
           <NotificationsCenter
             onBack={() => window.history.back()}
