@@ -49,6 +49,24 @@ const Index = () => {
   const [view, setView] = useState<View>("splash");
   const [tab, setTab] = useState<Screen>("home");
   const [activeStudyPack, setActiveStudyPack] = useState<string | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+
+  // Check if the signed-in user has completed onboarding (level + course set).
+  useEffect(() => {
+    if (!user) { setNeedsOnboarding(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("level, course_code, display_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const incomplete = !data?.level || !data?.course_code || !data?.display_name;
+      setNeedsOnboarding(incomplete);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Internal navigation history stack so the device/browser back button
   // returns to the previous in-app view instead of closing the app.
