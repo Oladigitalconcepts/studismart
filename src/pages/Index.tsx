@@ -36,7 +36,8 @@ type View =
   | "practice"
   | "examfocus"
   | "profile"
-  | "materials";
+  | "materials"
+  | "notifications";
 
 const Index = () => {
   const { user, loading } = useSession();
