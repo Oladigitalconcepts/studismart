@@ -1164,6 +1164,8 @@ type NotifPrefs = {
   notify_weekly_summary: boolean;
   quiet_hours_start: string | null;
   quiet_hours_end: string | null;
+  reminder_time: string | null;
+  push_enabled: boolean;
 };
 
 const DEFAULT_PREFS: NotifPrefs = {
@@ -1173,6 +1175,8 @@ const DEFAULT_PREFS: NotifPrefs = {
   notify_weekly_summary: false,
   quiet_hours_start: null,
   quiet_hours_end: null,
+  reminder_time: "19:00",
+  push_enabled: false,
 };
 
 const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
@@ -1191,7 +1195,7 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
       if (!user) { setLoading(false); return; }
       const { data } = await supabase
         .from("profiles")
-        .select("notify_study_reminders, notify_new_features, notify_practice_streaks, notify_weekly_summary, quiet_hours_start, quiet_hours_end")
+        .select("notify_study_reminders, notify_new_features, notify_practice_streaks, notify_weekly_summary, quiet_hours_start, quiet_hours_end, reminder_time, push_enabled")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -1203,6 +1207,8 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
           notify_weekly_summary: data.notify_weekly_summary ?? false,
           quiet_hours_start: data.quiet_hours_start ?? null,
           quiet_hours_end: data.quiet_hours_end ?? null,
+          reminder_time: data.reminder_time ?? "19:00",
+          push_enabled: data.push_enabled ?? false,
         });
         setQuietEnabled(!!(data.quiet_hours_start && data.quiet_hours_end));
       }
@@ -1221,6 +1227,12 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
     setSaving(false);
     if (error) {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      return;
+    }
+    // Reschedule local reminder if reminder time or study-reminder toggle changed.
+    if (patch.reminder_time !== undefined || patch.notify_study_reminders !== undefined) {
+      const { scheduleDailyReminder } = await import("@/lib/notifications");
+      scheduleDailyReminder(next.reminder_time, next.notify_study_reminders);
     }
   };
 
@@ -1229,10 +1241,12 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
       toast({ title: "Not supported", description: "This device doesn't support notifications." });
       return;
     }
-    const result = await Notification.requestPermission();
-    setPermission(result);
-    if (result === "granted") {
-      toast({ title: "Notifications enabled" });
+    const { enableBrowserPush } = await import("@/lib/notifications");
+    const ok = await enableBrowserPush(null);
+    setPermission(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
+    if (ok) {
+      await save({ push_enabled: true });
+      toast({ title: "Notifications enabled", description: "You'll get reminders, streak alerts, and study pack updates." });
     } else {
       toast({ title: "Permission denied", description: "Enable notifications in your browser settings." });
     }
@@ -1281,6 +1295,20 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
 
             <Section title="Notify me about">
               <ToggleRow icon={Flame} label="Study reminders" checked={prefs.notify_study_reminders} onChange={(v) => save({ notify_study_reminders: v })} />
+              {prefs.notify_study_reminders && (
+                <div className="flex items-center justify-between p-4 border-t border-border/40">
+                  <div className="flex items-center gap-3">
+                    <Bell className="h-5 w-5 text-primary" />
+                    <span className="font-medium text-sm">Daily reminder time</span>
+                  </div>
+                  <Input
+                    type="time"
+                    value={prefs.reminder_time ?? "19:00"}
+                    onChange={(e) => save({ reminder_time: e.target.value || "19:00" })}
+                    className="w-32 h-9 rounded-lg"
+                  />
+                </div>
+              )}
               <ToggleRow icon={Award} label="Practice streaks" checked={prefs.notify_practice_streaks} onChange={(v) => save({ notify_practice_streaks: v })} />
               <ToggleRow icon={Sparkles} label="New features" checked={prefs.notify_new_features} onChange={(v) => save({ notify_new_features: v })} />
               <ToggleRow icon={Brain} label="Weekly summary" checked={prefs.notify_weekly_summary} onChange={(v) => save({ notify_weekly_summary: v })} />

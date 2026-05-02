@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { extractTextFromFile } from "@/lib/extractText";
+import { createNotification, checkAchievements } from "@/lib/notifications";
 import aiRobot from "@/assets/ai-robot.png";
 
 interface Props {
@@ -102,6 +103,24 @@ export const UploadScreen = ({ onBack, onComplete }: Props) => {
       stop();
       setStageIdx(STAGES.length - 1);
       toast({ title: "Study pack ready!" });
+      // Fire in-app + local notification (non-blocking).
+      void createNotification(
+        "study_pack_ready",
+        "📚 Study pack ready",
+        `Your pack for "${finalTitle}" is ready to practice.`,
+        { study_pack_id: packId, material_id: material.id },
+      );
+      void (async () => {
+        try {
+          const [{ data: ans }, { count: packs }, { count: materials }] = await Promise.all([
+            supabase.from("answer_attempts").select("is_correct"),
+            supabase.from("study_packs").select("*", { count: "exact", head: true }),
+            supabase.from("materials").select("*", { count: "exact", head: true }),
+          ]);
+          const correct = (ans ?? []).filter((a) => a.is_correct).length;
+          await checkAchievements({ correct, packs: packs ?? 0, materials: materials ?? 0 });
+        } catch { /* noop */ }
+      })();
       onComplete(packId);
     } catch (e: any) {
       stop();

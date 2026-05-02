@@ -85,6 +85,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          data: Json
+          id: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       practice_attempts: {
         Row: {
           correct: number
@@ -135,12 +168,15 @@ export type Database = {
           email_weekly_digest: boolean
           id: string
           language: string
+          last_streak_milestone: number
           notify_new_features: boolean
           notify_practice_streaks: boolean
           notify_study_reminders: boolean
           notify_weekly_summary: boolean
+          push_enabled: boolean
           quiet_hours_end: string | null
           quiet_hours_start: string | null
+          reminder_time: string | null
           updated_at: string
         }
         Insert: {
@@ -154,12 +190,15 @@ export type Database = {
           email_weekly_digest?: boolean
           id: string
           language?: string
+          last_streak_milestone?: number
           notify_new_features?: boolean
           notify_practice_streaks?: boolean
           notify_study_reminders?: boolean
           notify_weekly_summary?: boolean
+          push_enabled?: boolean
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
+          reminder_time?: string | null
           updated_at?: string
         }
         Update: {
@@ -173,13 +212,46 @@ export type Database = {
           email_weekly_digest?: boolean
           id?: string
           language?: string
+          last_streak_milestone?: number
           notify_new_features?: boolean
           notify_practice_streaks?: boolean
           notify_study_reminders?: boolean
           notify_weekly_summary?: boolean
+          push_enabled?: boolean
           quiet_hours_end?: string | null
           quiet_hours_start?: string | null
+          reminder_time?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }

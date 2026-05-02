@@ -8,10 +8,13 @@ import { Practice } from "@/components/studymind/Practice";
 import { ExamFocus } from "@/components/studymind/ExamFocus";
 import { Profile } from "@/components/studymind/Profile";
 import { Materials } from "@/components/studymind/Materials";
+import { NotificationsCenter } from "@/components/studymind/NotificationsCenter";
 import { BottomNav, type Screen } from "@/components/studymind/BottomNav";
 import { InstallPrompt } from "@/components/studymind/InstallPrompt";
 import { OfflineBanner } from "@/components/studymind/OfflineBanner";
 import { useSession } from "@/hooks/useSession";
+import { scheduleDailyReminder, computeStreak, checkStreakMilestone } from "@/lib/notifications";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import {
   AlertDialog,
@@ -33,7 +36,8 @@ type View =
   | "practice"
   | "examfocus"
   | "profile"
-  | "materials";
+  | "materials"
+  | "notifications";
 
 const Index = () => {
   const { user, loading } = useSession();
@@ -95,6 +99,27 @@ const Index = () => {
     [tab, pushHistory]
   );
 
+  // Bootstrap notifications: schedule daily reminder + check streak milestone on login.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("reminder_time, notify_study_reminders")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      scheduleDailyReminder(
+        data?.reminder_time ?? "19:00",
+        data?.notify_study_reminders ?? true,
+      );
+      const streak = await computeStreak();
+      if (streak.current > 0) await checkStreakMilestone(streak.current);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
   if (loading) {
     return (
       <main className="screen-shell flex items-center justify-center">
@@ -138,6 +163,7 @@ const Index = () => {
               if (s === "studypack") setActiveStudyPack(null);
               navigate(s as View);
             }}
+            onOpenNotifications={() => navigate("notifications")}
           />
         )}
         {view === "upload" && (
@@ -171,6 +197,17 @@ const Index = () => {
           <Materials
             onUpload={() => navigate("upload")}
             onOpenPack={(packId) => { setActiveStudyPack(packId); navigate("studypack", "practice"); }}
+          />
+        )}
+        {view === "notifications" && (
+          <NotificationsCenter
+            onBack={() => window.history.back()}
+            onOpenItem={(type, data) => {
+              if (type === "study_pack_ready" && typeof data?.study_pack_id === "string") {
+                setActiveStudyPack(data.study_pack_id as string);
+                navigate("studypack", "practice");
+              }
+            }}
           />
         )}
       </div>
