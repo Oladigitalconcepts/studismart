@@ -99,6 +99,27 @@ const Index = () => {
     [tab, pushHistory]
   );
 
+  // Bootstrap notifications: schedule daily reminder + check streak milestone on login.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("reminder_time, notify_study_reminders")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      scheduleDailyReminder(
+        data?.reminder_time ?? "19:00",
+        data?.notify_study_reminders ?? true,
+      );
+      const streak = await computeStreak();
+      if (streak.current > 0) await checkStreakMilestone(streak.current);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
   if (loading) {
     return (
       <main className="screen-shell flex items-center justify-center">
