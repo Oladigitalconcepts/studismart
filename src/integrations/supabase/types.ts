@@ -166,9 +166,11 @@ export type Database = {
           email_security_alerts: boolean
           email_study_tips: boolean
           email_weekly_digest: boolean
+          exam_date: string | null
           id: string
           language: string
           last_streak_milestone: number
+          level: string | null
           notify_new_features: boolean
           notify_practice_streaks: boolean
           notify_study_reminders: boolean
@@ -178,6 +180,7 @@ export type Database = {
           quiet_hours_start: string | null
           reminder_time: string | null
           updated_at: string
+          weekly_goal: number
         }
         Insert: {
           avatar_url?: string | null
@@ -188,9 +191,11 @@ export type Database = {
           email_security_alerts?: boolean
           email_study_tips?: boolean
           email_weekly_digest?: boolean
+          exam_date?: string | null
           id: string
           language?: string
           last_streak_milestone?: number
+          level?: string | null
           notify_new_features?: boolean
           notify_practice_streaks?: boolean
           notify_study_reminders?: boolean
@@ -200,6 +205,7 @@ export type Database = {
           quiet_hours_start?: string | null
           reminder_time?: string | null
           updated_at?: string
+          weekly_goal?: number
         }
         Update: {
           avatar_url?: string | null
@@ -210,9 +216,11 @@ export type Database = {
           email_security_alerts?: boolean
           email_study_tips?: boolean
           email_weekly_digest?: boolean
+          exam_date?: string | null
           id?: string
           language?: string
           last_streak_milestone?: number
+          level?: string | null
           notify_new_features?: boolean
           notify_practice_streaks?: boolean
           notify_study_reminders?: boolean
@@ -222,6 +230,7 @@ export type Database = {
           quiet_hours_start?: string | null
           reminder_time?: string | null
           updated_at?: string
+          weekly_goal?: number
         }
         Relationships: []
       }
@@ -342,7 +351,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      weekly_leaderboard: {
+        Args: never
+        Returns: {
+          accuracy: number
+          avatar_url: string
+          display_name: string
+          rank: number
+          score: number
+          sessions: number
+          total_correct: number
+          total_questions: number
+          total_seconds: number
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
