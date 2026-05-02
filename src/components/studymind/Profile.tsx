@@ -878,7 +878,7 @@ const EditProfileScreen = ({
       const payload = {
         id: user.id,
         display_name: name.trim(),
-        course_code: course.trim() ? course.trim().toUpperCase() : null,
+        course_code: course.trim() ? course.trim() : null,
         updated_at: new Date().toISOString(),
       };
       const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
