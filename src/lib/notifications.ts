@@ -66,12 +66,12 @@ export const createNotification = async (
     user_id: user.id,
     type,
     title,
-    body: body ?? null,
+    body: body ?? undefined,
     data: (data ?? {}) as Record<string, unknown>,
   };
   const { data: row, error } = await supabase
     .from("notifications")
-    .insert(insertRow)
+    .insert([insertRow])
     .select()
     .single();
 
