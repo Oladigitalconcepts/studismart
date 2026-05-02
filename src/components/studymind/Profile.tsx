@@ -1195,7 +1195,7 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
       if (!user) { setLoading(false); return; }
       const { data } = await supabase
         .from("profiles")
-        .select("notify_study_reminders, notify_new_features, notify_practice_streaks, notify_weekly_summary, quiet_hours_start, quiet_hours_end")
+        .select("notify_study_reminders, notify_new_features, notify_practice_streaks, notify_weekly_summary, quiet_hours_start, quiet_hours_end, reminder_time, push_enabled")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -1207,6 +1207,8 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
           notify_weekly_summary: data.notify_weekly_summary ?? false,
           quiet_hours_start: data.quiet_hours_start ?? null,
           quiet_hours_end: data.quiet_hours_end ?? null,
+          reminder_time: data.reminder_time ?? "19:00",
+          push_enabled: data.push_enabled ?? false,
         });
         setQuietEnabled(!!(data.quiet_hours_start && data.quiet_hours_end));
       }
