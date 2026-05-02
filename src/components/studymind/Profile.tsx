@@ -652,17 +652,7 @@ const profileSchema = z.object({
   course_code: z
     .string()
     .trim()
-    .transform((v) => normalizeCourseCode(v))
-    .pipe(
-      z.string()
-        .max(12, "Must be 12 characters or fewer")
-        .regex(/^[A-Z0-9-]*$/, "Use letters, numbers, and hyphens only")
-        .refine((v) => v === "" || v.length >= 2, "Use at least 2 characters")
-        .refine(
-          (v) => v === "" || /^[A-Z]{2,5}-?\d{1,4}[A-Z]?$/.test(v),
-          "Looks unusual — try a format like CSC101 or MATH-204"
-        )
-    )
+    .max(15, "Must be 15 characters or fewer")
     .optional()
     .or(z.literal("")),
 });
