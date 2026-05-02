@@ -163,6 +163,7 @@ const Index = () => {
               if (s === "studypack") setActiveStudyPack(null);
               navigate(s as View);
             }}
+            onOpenNotifications={() => navigate("notifications")}
           />
         )}
         {view === "upload" && (
@@ -196,6 +197,17 @@ const Index = () => {
           <Materials
             onUpload={() => navigate("upload")}
             onOpenPack={(packId) => { setActiveStudyPack(packId); navigate("studypack", "practice"); }}
+          />
+        )}
+        {view === "notifications" && (
+          <NotificationsCenter
+            onBack={() => window.history.back()}
+            onOpenItem={(type, data) => {
+              if (type === "study_pack_ready" && typeof data?.study_pack_id === "string") {
+                setActiveStudyPack(data.study_pack_id as string);
+                navigate("studypack", "practice");
+              }
+            }}
           />
         )}
       </div>
