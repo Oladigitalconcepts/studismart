@@ -106,14 +106,16 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
 
       if (cancelled) return;
 
-      setProfile({
+      const nextProfile: Profile = {
         display_name: prof?.display_name ?? user.email?.split("@")[0] ?? null,
         course_code: prof?.course_code ?? null,
         level: prof?.level ?? null,
         exam_date: prof?.exam_date ?? null,
         weekly_goal: prof?.weekly_goal ?? 5,
         avatar_url: prof?.avatar_url ?? null,
-      });
+      };
+      setProfile(nextProfile);
+      try { localStorage.setItem("studymind-profile-cache", JSON.stringify(nextProfile)); } catch { /* noop */ }
 
       // Topic accuracy
       const topicMap = new Map<string, { c: number; t: number }>();
