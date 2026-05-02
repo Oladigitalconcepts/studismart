@@ -65,6 +65,12 @@ export const Profile = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    const onUpdate = () => { void loadProfile(); };
+    window.addEventListener("profile-updated", onUpdate);
+    return () => window.removeEventListener("profile-updated", onUpdate);
+  }, []);
+
   const initials = (name || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
   if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} />;
