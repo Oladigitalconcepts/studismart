@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Splash } from "@/components/studymind/Splash";
 import { Auth } from "@/components/studymind/Auth";
+import { Onboarding } from "@/components/studymind/Onboarding";
 import { Dashboard } from "@/components/studymind/Dashboard";
 import { UploadScreen } from "@/components/studymind/UploadScreen";
 import { StudyPack } from "@/components/studymind/StudyPack";
