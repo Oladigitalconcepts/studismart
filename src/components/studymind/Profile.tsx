@@ -1164,6 +1164,8 @@ type NotifPrefs = {
   notify_weekly_summary: boolean;
   quiet_hours_start: string | null;
   quiet_hours_end: string | null;
+  reminder_time: string | null;
+  push_enabled: boolean;
 };
 
 const DEFAULT_PREFS: NotifPrefs = {
@@ -1173,6 +1175,8 @@ const DEFAULT_PREFS: NotifPrefs = {
   notify_weekly_summary: false,
   quiet_hours_start: null,
   quiet_hours_end: null,
+  reminder_time: "19:00",
+  push_enabled: false,
 };
 
 const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
