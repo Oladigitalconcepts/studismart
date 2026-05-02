@@ -1132,6 +1132,8 @@ const EditProfileScreen = ({
           )}
         </div>
 
+        <ExtraProfileFields />
+
         <div className="mb-4">
           <label className="text-xs font-semibold text-muted-foreground">Email</label>
           <Input value={email} disabled readOnly className="mt-1 bg-muted text-muted-foreground" />
@@ -1154,6 +1156,88 @@ const EditProfileScreen = ({
         </Button>
       </div>
     </div>
+  );
+};
+
+const LEVEL_OPTIONS = ["100 Level", "200 Level", "300 Level", "400 Level", "500 Level", "Postgrad", "Other"];
+
+const ExtraProfileFields = () => {
+  const [level, setLevel] = useState<string>("");
+  const [examDate, setExamDate] = useState<string>("");
+  const [weeklyGoal, setWeeklyGoal] = useState<number>(5);
+  const [loaded, setLoaded] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("level, exam_date, weekly_goal")
+        .eq("id", user.id)
+        .maybeSingle();
+      setLevel(data?.level ?? "");
+      setExamDate(data?.exam_date ?? "");
+      setWeeklyGoal(data?.weekly_goal ?? 5);
+      setLoaded(true);
+    })();
+  }, []);
+
+  const save = async (patch: { level?: string | null; exam_date?: string | null; weekly_goal?: number }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+    if (!error) setSavedAt(Date.now());
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <>
+      <div className="mb-4">
+        <label className="text-xs font-semibold text-muted-foreground">Level</label>
+        <select
+          value={level}
+          onChange={(e) => { setLevel(e.target.value); void save({ level: e.target.value || null }); }}
+          className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+        >
+          <option value="">Not set</option>
+          {LEVEL_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+
+      <div className="mb-4">
+        <label className="text-xs font-semibold text-muted-foreground">Next Exam Date</label>
+        <Input
+          type="date"
+          value={examDate}
+          onChange={(e) => { setExamDate(e.target.value); void save({ exam_date: e.target.value || null }); }}
+          className="mt-1"
+        />
+        <p className="mt-1.5 text-[11px] text-muted-foreground">Shows an exam countdown on your dashboard.</p>
+      </div>
+
+      <div className="mb-4">
+        <label className="text-xs font-semibold text-muted-foreground">Weekly Goal (sessions)</label>
+        <Input
+          type="number"
+          min={1}
+          max={50}
+          value={weeklyGoal}
+          onChange={(e) => {
+            const n = Math.max(1, Math.min(50, Number(e.target.value) || 1));
+            setWeeklyGoal(n);
+            void save({ weekly_goal: n });
+          }}
+          className="mt-1"
+        />
+        {savedAt && <p className="mt-1.5 text-[11px] text-success">Saved</p>}
+      </div>
+    </>
   );
 };
 
