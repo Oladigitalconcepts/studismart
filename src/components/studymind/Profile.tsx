@@ -900,6 +900,7 @@ const EditProfileScreen = ({
       savedRef.current = { name, course };
       setErrors((e) => ({ ...e, form: undefined }));
       setStatus("saved");
+      window.dispatchEvent(new CustomEvent("profile-updated"));
       await onSaved();
       if (savedTimerRef.current) window.clearTimeout(savedTimerRef.current);
       savedTimerRef.current = window.setTimeout(() => {
