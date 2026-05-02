@@ -11,8 +11,9 @@ interface Props {
   onOpenNotifications?: () => void;
 }
 
-export const Dashboard = ({ onNavigate }: Props) => {
+export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   const [name, setName] = useState<string>("");
+  const { unread } = useNotifications();
   const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
