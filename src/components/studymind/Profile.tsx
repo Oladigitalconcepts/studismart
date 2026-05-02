@@ -1067,7 +1067,7 @@ const EditProfileScreen = ({
 
         <div className="mb-4">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-muted-foreground">Course Code</label>
+            <label className="text-xs font-semibold text-muted-foreground">Course / Department</label>
             {recentCourses.length > 0 && (
               <span className="text-[10px] text-muted-foreground">{recentCourses.length} from your materials</span>
             )}
@@ -1085,15 +1085,14 @@ const EditProfileScreen = ({
                   pickSuggestion(filteredSuggestions[0]);
                 }
               }}
-              placeholder="e.g. CSC101"
-              maxLength={12}
-              autoCapitalize="characters"
+              placeholder="e.g. CSC or Computer Science"
+              maxLength={15}
               autoCorrect="off"
               spellCheck={false}
               aria-invalid={!!errors.course_code}
               aria-autocomplete="list"
               aria-expanded={showSuggestions && filteredSuggestions.length > 0}
-              className={`mt-1 uppercase ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+              className={`mt-1 ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
               <div
@@ -1101,7 +1100,7 @@ const EditProfileScreen = ({
                 className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-border bg-popover shadow-elevated overflow-hidden animate-fade-in"
               >
                 <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Recent courses
+                  Recent
                 </p>
                 <ul className="max-h-56 overflow-y-auto">
                   {filteredSuggestions.map((s) => (
@@ -1113,7 +1112,7 @@ const EditProfileScreen = ({
                         className="w-full px-3 py-2.5 flex items-center gap-2 text-left text-sm hover:bg-secondary tap-scale"
                       >
                         <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                        <span className="flex-1 font-mono font-semibold">{s}</span>
+                        <span className="flex-1 font-semibold">{s}</span>
                         <span className="text-[10px] text-muted-foreground">Tap to use</span>
                       </button>
                     </li>
@@ -1128,7 +1127,7 @@ const EditProfileScreen = ({
             </p>
           ) : (
             <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Your primary course or programme · format like <span className="font-mono">CSC101</span>
+              Your course or department · max 15 characters
             </p>
           )}
         </div>
