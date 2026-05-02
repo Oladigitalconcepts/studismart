@@ -4,9 +4,11 @@ import { StatusBar } from "./StatusBar";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface Props {
   onNavigate: (screen: "upload" | "studypack" | "examfocus") => void;
+  onOpenNotifications?: () => void;
 }
 
 export const Dashboard = ({ onNavigate }: Props) => {
