@@ -167,6 +167,14 @@ const Index = () => {
     );
   }
 
+  if (needsOnboarding === null) {
+    return (
+      <main className="screen-shell flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </main>
+    );
+  }
+
   if (needsOnboarding) {
     return (
       <main className="screen-shell !pb-0">
