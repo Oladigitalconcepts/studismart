@@ -210,7 +210,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
   const greet = (() => {
     const h = new Date().getHours();
