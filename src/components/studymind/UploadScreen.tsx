@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { extractTextFromFile } from "@/lib/extractText";
+import { createNotification, checkAchievements } from "@/lib/notifications";
 import aiRobot from "@/assets/ai-robot.png";
 
 interface Props {
