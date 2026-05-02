@@ -33,7 +33,7 @@ export const useNotifications = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       channel = supabase
-        .channel(`notifications:${user.id}`)
+        .channel(`notifications:${user.id}:${Math.random().toString(36).slice(2)}`)
         .on(
           "postgres_changes",
           {
