@@ -65,6 +65,12 @@ export const Profile = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    const onUpdate = () => { void loadProfile(); };
+    window.addEventListener("profile-updated", onUpdate);
+    return () => window.removeEventListener("profile-updated", onUpdate);
+  }, []);
+
   const initials = (name || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
   if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} />;
@@ -652,17 +658,7 @@ const profileSchema = z.object({
   course_code: z
     .string()
     .trim()
-    .transform((v) => normalizeCourseCode(v))
-    .pipe(
-      z.string()
-        .max(12, "Must be 12 characters or fewer")
-        .regex(/^[A-Z0-9-]*$/, "Use letters, numbers, and hyphens only")
-        .refine((v) => v === "" || v.length >= 2, "Use at least 2 characters")
-        .refine(
-          (v) => v === "" || /^[A-Z]{2,5}-?\d{1,4}[A-Z]?$/.test(v),
-          "Looks unusual — try a format like CSC101 or MATH-204"
-        )
-    )
+    .max(15, "Must be 15 characters or fewer")
     .optional()
     .or(z.literal("")),
 });
@@ -888,7 +884,7 @@ const EditProfileScreen = ({
       const payload = {
         id: user.id,
         display_name: name.trim(),
-        course_code: course.trim() ? course.trim().toUpperCase() : null,
+        course_code: course.trim() ? course.trim() : null,
         updated_at: new Date().toISOString(),
       };
       const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
@@ -900,6 +896,7 @@ const EditProfileScreen = ({
       savedRef.current = { name, course };
       setErrors((e) => ({ ...e, form: undefined }));
       setStatus("saved");
+      window.dispatchEvent(new CustomEvent("profile-updated"));
       await onSaved();
       if (savedTimerRef.current) window.clearTimeout(savedTimerRef.current);
       savedTimerRef.current = window.setTimeout(() => {
@@ -1066,7 +1063,7 @@ const EditProfileScreen = ({
 
         <div className="mb-4">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-muted-foreground">Course Code</label>
+            <label className="text-xs font-semibold text-muted-foreground">Course / Department</label>
             {recentCourses.length > 0 && (
               <span className="text-[10px] text-muted-foreground">{recentCourses.length} from your materials</span>
             )}
@@ -1084,15 +1081,14 @@ const EditProfileScreen = ({
                   pickSuggestion(filteredSuggestions[0]);
                 }
               }}
-              placeholder="e.g. CSC101"
-              maxLength={12}
-              autoCapitalize="characters"
+              placeholder="e.g. CSC or Computer Science"
+              maxLength={15}
               autoCorrect="off"
               spellCheck={false}
               aria-invalid={!!errors.course_code}
               aria-autocomplete="list"
               aria-expanded={showSuggestions && filteredSuggestions.length > 0}
-              className={`mt-1 uppercase ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
+              className={`mt-1 ${errors.course_code ? "border-destructive focus-visible:ring-destructive/40" : ""}`}
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
               <div
@@ -1100,7 +1096,7 @@ const EditProfileScreen = ({
                 className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-border bg-popover shadow-elevated overflow-hidden animate-fade-in"
               >
                 <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Recent courses
+                  Recent
                 </p>
                 <ul className="max-h-56 overflow-y-auto">
                   {filteredSuggestions.map((s) => (
@@ -1112,7 +1108,7 @@ const EditProfileScreen = ({
                         className="w-full px-3 py-2.5 flex items-center gap-2 text-left text-sm hover:bg-secondary tap-scale"
                       >
                         <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                        <span className="flex-1 font-mono font-semibold">{s}</span>
+                        <span className="flex-1 font-semibold">{s}</span>
                         <span className="text-[10px] text-muted-foreground">Tap to use</span>
                       </button>
                     </li>
@@ -1127,7 +1123,7 @@ const EditProfileScreen = ({
             </p>
           ) : (
             <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Your primary course or programme · format like <span className="font-mono">CSC101</span>
+              Your course or department · max 15 characters
             </p>
           )}
         </div>
@@ -1191,7 +1187,13 @@ const ExtraProfileFields = () => {
       .from("profiles")
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq("id", user.id);
-    if (!error) setSavedAt(Date.now());
+    if (!error) {
+      setSavedAt(Date.now());
+      window.dispatchEvent(new CustomEvent("profile-updated"));
+      toast({ title: "Saved" });
+    } else {
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    }
   };
 
   if (!loaded) return null;
@@ -1442,6 +1444,7 @@ const LogoutScreen = ({ onCancel }: { onCancel: () => void }) => {
   const [loading, setLoading] = useState(false);
   const signOut = async () => {
     setLoading(true);
+    try { localStorage.removeItem("studymind-profile-cache"); } catch { /* noop */ }
     await supabase.auth.signOut();
   };
   return (

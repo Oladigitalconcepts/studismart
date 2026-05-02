@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Splash } from "@/components/studymind/Splash";
 import { Auth } from "@/components/studymind/Auth";
+import { Onboarding } from "@/components/studymind/Onboarding";
 import { Dashboard } from "@/components/studymind/Dashboard";
 import { UploadScreen } from "@/components/studymind/UploadScreen";
 import { StudyPack } from "@/components/studymind/StudyPack";
@@ -48,6 +49,24 @@ const Index = () => {
   const [view, setView] = useState<View>("splash");
   const [tab, setTab] = useState<Screen>("home");
   const [activeStudyPack, setActiveStudyPack] = useState<string | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+
+  // Check if the signed-in user has completed onboarding (level + course set).
+  useEffect(() => {
+    if (!user) { setNeedsOnboarding(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("level, course_code, display_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const incomplete = !data?.level || !data?.course_code || !data?.display_name;
+      setNeedsOnboarding(incomplete);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Internal navigation history stack so the device/browser back button
   // returns to the previous in-app view instead of closing the app.
@@ -144,6 +163,22 @@ const Index = () => {
     return (
       <main className="screen-shell !pb-0">
         <Auth onAuthed={() => navigate("home", "home")} />
+      </main>
+    );
+  }
+
+  if (needsOnboarding === null) {
+    return (
+      <main className="screen-shell flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </main>
+    );
+  }
+
+  if (needsOnboarding) {
+    return (
+      <main className="screen-shell !pb-0">
+        <Onboarding onComplete={() => { setNeedsOnboarding(false); navigate("home", "home"); }} />
       </main>
     );
   }

@@ -49,7 +49,12 @@ const initialsOf = (name: string) =>
 
 export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   const { unread } = useNotifications();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    try {
+      const raw = localStorage.getItem("studymind-profile-cache");
+      return raw ? (JSON.parse(raw) as Profile) : null;
+    } catch { return null; }
+  });
   const [coursesCount, setCoursesCount] = useState(0);
   const [weakAreasCount, setWeakAreasCount] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -62,6 +67,14 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   const [rank, setRank] = useState<{ position: number; total: number } | null>(null);
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Refresh whenever the profile is edited elsewhere in the app.
+  useEffect(() => {
+    const onUpdate = () => setReloadKey((k) => k + 1);
+    window.addEventListener("profile-updated", onUpdate);
+    return () => window.removeEventListener("profile-updated", onUpdate);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,14 +106,16 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
 
       if (cancelled) return;
 
-      setProfile({
+      const nextProfile: Profile = {
         display_name: prof?.display_name ?? user.email?.split("@")[0] ?? null,
         course_code: prof?.course_code ?? null,
         level: prof?.level ?? null,
         exam_date: prof?.exam_date ?? null,
         weekly_goal: prof?.weekly_goal ?? 5,
         avatar_url: prof?.avatar_url ?? null,
-      });
+      };
+      setProfile(nextProfile);
+      try { localStorage.setItem("studymind-profile-cache", JSON.stringify(nextProfile)); } catch { /* noop */ }
 
       // Topic accuracy
       const topicMap = new Map<string, { c: number; t: number }>();
@@ -195,7 +210,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
   const greet = (() => {
     const h = new Date().getHours();
