@@ -49,7 +49,12 @@ const initialsOf = (name: string) =>
 
 export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   const { unread } = useNotifications();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    try {
+      const raw = localStorage.getItem("studymind-profile-cache");
+      return raw ? (JSON.parse(raw) as Profile) : null;
+    } catch { return null; }
+  });
   const [coursesCount, setCoursesCount] = useState(0);
   const [weakAreasCount, setWeakAreasCount] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -62,6 +67,14 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   const [rank, setRank] = useState<{ position: number; total: number } | null>(null);
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Refresh whenever the profile is edited elsewhere in the app.
+  useEffect(() => {
+    const onUpdate = () => setReloadKey((k) => k + 1);
+    window.addEventListener("profile-updated", onUpdate);
+    return () => window.removeEventListener("profile-updated", onUpdate);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
