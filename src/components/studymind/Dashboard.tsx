@@ -44,25 +44,32 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   return (
     <div className="animate-fade-in">
       <StatusBar />
-      <div className="px-5 pt-3 pb-4 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold leading-tight">
-            {greet}, {name || "there"} <span className="inline-block animate-float">👋</span>
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">Ready to crush your goals today?</p>
+      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center shadow-soft">
+            <Sparkles className="h-4 w-4 text-white" />
+          </div>
+          <span className="font-bold text-sm tracking-tight">StudyMind</span>
         </div>
         <button
           onClick={onOpenNotifications}
-          className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center tap-scale relative"
+          className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center tap-scale relative"
           aria-label="Notifications"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-4 w-4" />
           {unread > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
               {unread > 9 ? "9+" : unread}
             </span>
           )}
         </button>
+      </div>
+      <div className="border-b border-border/60 mx-5" />
+      <div className="px-5 pt-4 pb-4">
+        <h1 className="text-2xl font-bold leading-tight">
+          {greet}, {name || "there"} <span className="inline-block animate-float">👋</span>
+        </h1>
+        <p className="text-muted-foreground text-sm mt-1">Ready to crush your goals today?</p>
       </div>
 
       <div className="px-5 space-y-3">
