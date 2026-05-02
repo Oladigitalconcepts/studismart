@@ -1132,6 +1132,8 @@ const EditProfileScreen = ({
           )}
         </div>
 
+        <ExtraProfileFields />
+
         <div className="mb-4">
           <label className="text-xs font-semibold text-muted-foreground">Email</label>
           <Input value={email} disabled readOnly className="mt-1 bg-muted text-muted-foreground" />
