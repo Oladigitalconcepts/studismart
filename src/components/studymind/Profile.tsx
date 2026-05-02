@@ -1295,6 +1295,20 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
 
             <Section title="Notify me about">
               <ToggleRow icon={Flame} label="Study reminders" checked={prefs.notify_study_reminders} onChange={(v) => save({ notify_study_reminders: v })} />
+              {prefs.notify_study_reminders && (
+                <div className="flex items-center justify-between p-4 border-t border-border/40">
+                  <div className="flex items-center gap-3">
+                    <Bell className="h-5 w-5 text-primary" />
+                    <span className="font-medium text-sm">Daily reminder time</span>
+                  </div>
+                  <Input
+                    type="time"
+                    value={prefs.reminder_time ?? "19:00"}
+                    onChange={(e) => save({ reminder_time: e.target.value || "19:00" })}
+                    className="w-32 h-9 rounded-lg"
+                  />
+                </div>
+              )}
               <ToggleRow icon={Award} label="Practice streaks" checked={prefs.notify_practice_streaks} onChange={(v) => save({ notify_practice_streaks: v })} />
               <ToggleRow icon={Sparkles} label="New features" checked={prefs.notify_new_features} onChange={(v) => save({ notify_new_features: v })} />
               <ToggleRow icon={Brain} label="Weekly summary" checked={prefs.notify_weekly_summary} onChange={(v) => save({ notify_weekly_summary: v })} />
