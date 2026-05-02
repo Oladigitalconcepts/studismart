@@ -1227,6 +1227,12 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
     setSaving(false);
     if (error) {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      return;
+    }
+    // Reschedule local reminder if reminder time or study-reminder toggle changed.
+    if (patch.reminder_time !== undefined || patch.notify_study_reminders !== undefined) {
+      const { scheduleDailyReminder } = await import("@/lib/notifications");
+      scheduleDailyReminder(next.reminder_time, next.notify_study_reminders);
     }
   };
 
@@ -1235,10 +1241,12 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
       toast({ title: "Not supported", description: "This device doesn't support notifications." });
       return;
     }
-    const result = await Notification.requestPermission();
-    setPermission(result);
-    if (result === "granted") {
-      toast({ title: "Notifications enabled" });
+    const { enableBrowserPush } = await import("@/lib/notifications");
+    const ok = await enableBrowserPush(null);
+    setPermission(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
+    if (ok) {
+      await save({ push_enabled: true });
+      toast({ title: "Notifications enabled", description: "You'll get reminders, streak alerts, and study pack updates." });
     } else {
       toast({ title: "Permission denied", description: "Enable notifications in your browser settings." });
     }
