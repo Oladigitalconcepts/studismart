@@ -132,6 +132,20 @@ export const Practice = ({ studyPackId, onBack, onFinish }: Props) => {
         // Opportunistically flush any queued ops while we're online.
         flushQueue(supabase as never).catch(() => {});
       }
+      // Fire achievement + streak notifications (best-effort, non-blocking).
+      (async () => {
+        try {
+          const [{ data: ans }, { count: packs }, { count: materials }] = await Promise.all([
+            supabase.from("answer_attempts").select("is_correct"),
+            supabase.from("study_packs").select("*", { count: "exact", head: true }),
+            supabase.from("materials").select("*", { count: "exact", head: true }),
+          ]);
+          const correct = (ans ?? []).filter((a) => a.is_correct).length;
+          await checkAchievements({ correct, packs: packs ?? 0, materials: materials ?? 0 });
+          const streak = await computeStreak();
+          if (streak.current > 0) await checkStreakMilestone(streak.current);
+        } catch { /* noop */ }
+      })();
     }
     onFinish();
   };
