@@ -62,16 +62,17 @@ export const createNotification = async (
     if (type === "system" && !prefs.notify_new_features) return null;
   }
 
-  const insertRow = {
-    user_id: user.id,
-    type,
-    title,
-    body: body ?? undefined,
-    data: (data ?? {}) as Record<string, unknown>,
-  };
   const { data: row, error } = await supabase
     .from("notifications")
-    .insert([insertRow])
+    .insert([
+      {
+        user_id: user.id,
+        type,
+        title,
+        body: body ?? undefined,
+        data: JSON.parse(JSON.stringify(data ?? {})),
+      },
+    ])
     .select()
     .single();
 
