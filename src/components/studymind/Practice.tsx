@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { cacheGet, cacheSet, enqueueOp, flushQueue } from "@/lib/offlineCache";
+import { computeStreak, checkStreakMilestone, checkAchievements } from "@/lib/notifications";
 
 interface Props {
   studyPackId: string | null;
