@@ -8,10 +8,13 @@ import { Practice } from "@/components/studymind/Practice";
 import { ExamFocus } from "@/components/studymind/ExamFocus";
 import { Profile } from "@/components/studymind/Profile";
 import { Materials } from "@/components/studymind/Materials";
+import { NotificationsCenter } from "@/components/studymind/NotificationsCenter";
 import { BottomNav, type Screen } from "@/components/studymind/BottomNav";
 import { InstallPrompt } from "@/components/studymind/InstallPrompt";
 import { OfflineBanner } from "@/components/studymind/OfflineBanner";
 import { useSession } from "@/hooks/useSession";
+import { scheduleDailyReminder, computeStreak, checkStreakMilestone } from "@/lib/notifications";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import {
   AlertDialog,
