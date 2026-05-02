@@ -1191,7 +1191,13 @@ const ExtraProfileFields = () => {
       .from("profiles")
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq("id", user.id);
-    if (!error) setSavedAt(Date.now());
+    if (!error) {
+      setSavedAt(Date.now());
+      window.dispatchEvent(new CustomEvent("profile-updated"));
+      toast({ title: "Saved" });
+    } else {
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    }
   };
 
   if (!loaded) return null;
