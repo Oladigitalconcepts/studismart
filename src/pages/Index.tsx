@@ -167,6 +167,14 @@ const Index = () => {
     );
   }
 
+  if (needsOnboarding) {
+    return (
+      <main className="screen-shell !pb-0">
+        <Onboarding onComplete={() => { setNeedsOnboarding(false); navigate("home", "home"); }} />
+      </main>
+    );
+  }
+
   const handleTab = (s: Screen) => {
     let nextView: View = view;
     if (s === "home") nextView = "home";
