@@ -70,18 +70,6 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
           {greet}, {name || "there"} <span className="inline-block animate-float">👋</span>
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Ready to crush your goals today?</p>
-        <button
-          onClick={onOpenNotifications}
-          className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center tap-scale relative"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5" />
-          {unread > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          )}
-        </button>
       </div>
 
       <div className="px-5 space-y-3">
