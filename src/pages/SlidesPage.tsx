@@ -52,7 +52,9 @@ const SlidesPage = () => {
         body: { study_pack_id: packId, force },
       });
       if (error) throw error;
-      setDeck((data as any)?.deck);
+      const d = (data as any)?.deck;
+      setDeck(d);
+      track("slides_generated", { study_pack_id: packId, slides: d?.slides?.length ?? 0 });
     } catch (e: any) {
       toast({ title: e?.message ?? "Could not generate slides", variant: "destructive" });
     } finally {
