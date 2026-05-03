@@ -1622,6 +1622,7 @@ const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
     }
+    window.dispatchEvent(new CustomEvent("profile-updated"));
     toast({ title: "Language updated", description: LANGUAGES.find((l) => l.code === code)?.label });
   };
 
