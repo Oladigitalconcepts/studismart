@@ -21,7 +21,9 @@ interface Props {
       | "profile"
       | "practice"
       | "analytics"
-      | "leaderboard",
+      | "leaderboard"
+      | "create-test"
+      | "quiz-for-others",
     payload?: { studyPackId?: string; topic?: string }
   ) => void;
   onOpenNotifications?: () => void;
