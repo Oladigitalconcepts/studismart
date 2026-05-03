@@ -56,7 +56,7 @@ export const AppLayout = () => {
     }
   }, [user, loading, location.pathname, navigate]);
 
-  if (loading || (user && needsOnboarding === null)) {
+  if (loading) {
     return (
       <main className="screen-shell flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -65,7 +65,7 @@ export const AppLayout = () => {
   }
 
   const hideNav =
-    HIDE_NAV_PREFIXES.includes(location.pathname) || !user || needsOnboarding;
+    HIDE_NAV_PREFIXES.includes(location.pathname) || !user;
   const padded = !hideNav;
 
   return (
