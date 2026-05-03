@@ -18,24 +18,7 @@ export const AppLayout = () => {
   const { user, loading } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
-  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
-
-  // Check onboarding status when user signs in.
-  useEffect(() => {
-    if (!user) { setNeedsOnboarding(null); return; }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("level, course_code, display_name")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      const incomplete = !data?.level || !data?.course_code || !data?.display_name;
-      setNeedsOnboarding(incomplete);
-    })();
-    return () => { cancelled = true; };
-  }, [user]);
+  // (Onboarding is now triggered only after a new signup, not via auto-redirect.)
 
   // Bootstrap notifications on login.
   useEffect(() => {
