@@ -3,6 +3,7 @@ import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatTime } from "@/lib/testBuilder";
+import { track } from "@/lib/analytics";
 
 export interface RunnerQuestion {
   id: string;
@@ -39,11 +40,18 @@ export const TestRunner = ({ questions, timeLimitSeconds, revealMode, onFinish, 
   const total = questions.length;
   const q = questions[idx];
 
-  const finish = (a: RunnerAnswer[]) => {
+  const finish = (a: RunnerAnswer[], reason: "completed" | "timeout" = "completed") => {
     if (finishedRef.current) return;
     finishedRef.current = true;
-    onFinish(a, Math.round((Date.now() - startedAt.current) / 1000));
+    const elapsed = Math.round((Date.now() - startedAt.current) / 1000);
+    track("quiz_finished", { reason, total, answered: a.length, correct: a.filter((x) => x.is_correct).length, duration: elapsed });
+    onFinish(a, elapsed);
   };
+
+  useEffect(() => {
+    track("quiz_started", { total, time_limit_seconds: timeLimitSeconds, reveal_mode: revealMode });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {
