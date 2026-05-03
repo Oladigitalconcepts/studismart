@@ -5,6 +5,7 @@ import { StatusBar } from "@/components/studymind/StatusBar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { track } from "@/lib/analytics";
 
 interface Slide {
   type: "title" | "content" | "summary";
@@ -41,10 +42,12 @@ const SlidesPage = () => {
           .maybeSingle();
         if (data) {
           setDeck(data as unknown as Deck);
+          track("slides_viewed", { study_pack_id: packId, slides: (data as any).slides?.length ?? 0 });
           setLoading(false);
           return;
         }
       }
+      track("slides_generation_started", { study_pack_id: packId, force });
       const { data, error } = await supabase.functions.invoke("generate-slides", {
         body: { study_pack_id: packId, force },
       });
