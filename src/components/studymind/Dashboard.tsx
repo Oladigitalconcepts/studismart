@@ -68,6 +68,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const hasCachedProfile = !!profile;
 
   // Refresh whenever the profile is edited elsewhere in the app.
   useEffect(() => {
