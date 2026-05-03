@@ -36,6 +36,12 @@ const HomePage = () => {
           case "leaderboard":
             navigate("/leaderboard");
             break;
+          case "create-test":
+            navigate("/create-test");
+            break;
+          case "quiz-for-others":
+            navigate("/quiz-for-others");
+            break;
         }
       }}
       onOpenNotifications={() => navigate("/notifications")}
