@@ -1533,6 +1533,7 @@ const EmailPreferencesScreen = ({ onBack }: { onBack: () => void }) => {
     const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
     setSaving(false);
     if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    else window.dispatchEvent(new CustomEvent("profile-updated"));
   };
 
   const unsubscribeAll = async () => {
