@@ -79,137 +79,142 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    const run = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || cancelled) return;
 
-      const [
-        { data: prof },
-        { data: ans },
-        { data: mats },
-        streakInfo,
-        { data: lb },
-        { data: weekAttempts },
-      ] = await Promise.all([
-        supabase.from("profiles")
-          .select("display_name, course_code, level, exam_date, weekly_goal, avatar_url")
-          .eq("id", user.id).maybeSingle(),
-        supabase.from("answer_attempts").select("topic, is_correct"),
-        supabase.from("materials")
-          .select("id, title, status, created_at, study_packs(id)")
-          .order("created_at", { ascending: false }).limit(8),
-        computeStreak(),
-        supabase.rpc("weekly_leaderboard"),
-        supabase.from("practice_attempts")
-          .select("finished_at")
-          .gte("finished_at", new Date(Date.now() - 7 * 86400000).toISOString()),
-      ]);
+      // PHASE 1 — profile only. Paints the identity card immediately.
+      supabase.from("profiles")
+        .select("display_name, course_code, level, exam_date, weekly_goal, avatar_url")
+        .eq("id", user.id).maybeSingle()
+        .then(({ data: prof }) => {
+          if (cancelled) return;
+          const nextProfile: Profile = {
+            display_name: prof?.display_name ?? user.email?.split("@")[0] ?? null,
+            course_code: prof?.course_code ?? null,
+            level: prof?.level ?? null,
+            exam_date: prof?.exam_date ?? null,
+            weekly_goal: prof?.weekly_goal ?? 5,
+            avatar_url: prof?.avatar_url ?? null,
+          };
+          setProfile(nextProfile);
+          try { localStorage.setItem("studymind-profile-cache", JSON.stringify(nextProfile)); } catch { /* noop */ }
+        });
 
-      if (cancelled) return;
-
-      const nextProfile: Profile = {
-        display_name: prof?.display_name ?? user.email?.split("@")[0] ?? null,
-        course_code: prof?.course_code ?? null,
-        level: prof?.level ?? null,
-        exam_date: prof?.exam_date ?? null,
-        weekly_goal: prof?.weekly_goal ?? 5,
-        avatar_url: prof?.avatar_url ?? null,
+      // PHASE 2 — secondary data in parallel (defers slightly so paint isn't blocked).
+      const schedule = (cb: () => void) => {
+        const ric: any = (window as any).requestIdleCallback;
+        if (ric) ric(cb, { timeout: 600 });
+        else setTimeout(cb, 0);
       };
-      setProfile(nextProfile);
-      try { localStorage.setItem("studymind-profile-cache", JSON.stringify(nextProfile)); } catch { /* noop */ }
 
-      // Topic accuracy
-      const topicMap = new Map<string, { c: number; t: number }>();
-      let correct = 0;
-      (ans ?? []).forEach((a: any) => {
-        if (a.is_correct) correct++;
-        const k = (a.topic ?? "General").trim() || "General";
-        const cur = topicMap.get(k) ?? { c: 0, t: 0 };
-        cur.t++;
-        if (a.is_correct) cur.c++;
-        topicMap.set(k, cur);
-      });
-      const total = ans?.length ?? 0;
-      const weak = Array.from(topicMap.entries())
-        .filter(([, v]) => v.t >= 3 && v.c / v.t < 0.7);
-      setWeakAreasCount(weak.length);
-      setProgress({
-        sessionsThisWeek: weekAttempts?.length ?? 0,
-        accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
-        questionsSolved: total,
-      });
+      schedule(async () => {
+        if (cancelled) return;
+        const [
+          { data: ans },
+          { data: mats },
+          streakInfo,
+          { data: lb },
+          { data: weekAttempts },
+        ] = await Promise.all([
+          supabase.from("answer_attempts").select("topic, is_correct"),
+          supabase.from("materials")
+            .select("id, title, status, created_at, study_packs(id)")
+            .order("created_at", { ascending: false }).limit(8),
+          computeStreak(),
+          supabase.rpc("weekly_leaderboard"),
+          supabase.from("practice_attempts")
+            .select("finished_at")
+            .gte("finished_at", new Date(Date.now() - 7 * 86400000).toISOString()),
+        ]);
+        if (cancelled) return;
 
-      // AI recommendation: weakest topic, else inactivity nudge, else general
-      if (weak.length > 0) {
-        const sorted = weak.sort((a, b) => a[1].c / a[1].t - b[1].c / b[1].t);
-        const [topic, v] = sorted[0];
-        setAiRec({
-          topic,
-          reason: `Your accuracy in ${topic} is ${Math.round((v.c / v.t) * 100)}%. A focused session will help.`,
+        // Topic accuracy
+        const topicMap = new Map<string, { c: number; t: number }>();
+        let correct = 0;
+        (ans ?? []).forEach((a: any) => {
+          if (a.is_correct) correct++;
+          const k = (a.topic ?? "General").trim() || "General";
+          const cur = topicMap.get(k) ?? { c: 0, t: 0 };
+          cur.t++;
+          if (a.is_correct) cur.c++;
+          topicMap.set(k, cur);
         });
-      } else if (!streakInfo.studiedToday) {
-        setAiRec({
-          topic: "Today's session",
-          reason: "Keep your momentum going with a quick practice round.",
+        const total = ans?.length ?? 0;
+        const weak = Array.from(topicMap.entries())
+          .filter(([, v]) => v.t >= 3 && v.c / v.t < 0.7);
+        setWeakAreasCount(weak.length);
+        setProgress({
+          sessionsThisWeek: weekAttempts?.length ?? 0,
+          accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+          questionsSolved: total,
         });
-      } else if ((mats ?? []).length > 0) {
-        setAiRec({
-          topic: "Review your latest material",
-          reason: "Reinforce what you just uploaded with a quick quiz.",
-        });
-      }
 
-      // Courses = distinct materials count (proxy)
-      setCoursesCount(mats?.length ?? 0);
-      setStreak(streakInfo.current);
-
-      // Leaderboard
-      const board = (lb as any[]) ?? [];
-      const me = board.find((r) => r.user_id === user.id);
-      if (me) setRank({ position: me.rank, total: board.length });
-
-      // Continue learning: compute progress per pack
-      const packIds = (mats ?? [])
-        .map((m: any) => m.study_packs?.[0]?.id)
-        .filter(Boolean) as string[];
-
-      let answeredByPack = new Map<string, Set<string>>();
-      let totalByPack = new Map<string, number>();
-      if (packIds.length > 0) {
-        const { data: qs } = await supabase
-          .from("questions")
-          .select("id, study_pack_id")
-          .in("study_pack_id", packIds);
-        (qs ?? []).forEach((q: any) => {
-          totalByPack.set(q.study_pack_id, (totalByPack.get(q.study_pack_id) ?? 0) + 1);
-        });
-        const qIds = (qs ?? []).map((q: any) => q.id);
-        if (qIds.length > 0) {
-          const { data: aa } = await supabase
-            .from("answer_attempts")
-            .select("question_id")
-            .in("question_id", qIds);
-          const qToPack = new Map<string, string>();
-          (qs ?? []).forEach((q: any) => qToPack.set(q.id, q.study_pack_id));
-          (aa ?? []).forEach((row: any) => {
-            const p = qToPack.get(row.question_id);
-            if (!p) return;
-            if (!answeredByPack.has(p)) answeredByPack.set(p, new Set());
-            answeredByPack.get(p)!.add(row.question_id);
+        if (weak.length > 0) {
+          const sorted = weak.sort((a, b) => a[1].c / a[1].t - b[1].c / b[1].t);
+          const [topic, v] = sorted[0];
+          setAiRec({
+            topic,
+            reason: `Your accuracy in ${topic} is ${Math.round((v.c / v.t) * 100)}%. A focused session will help.`,
           });
+        } else if (!streakInfo.studiedToday) {
+          setAiRec({ topic: "Today's session", reason: "Keep your momentum going with a quick practice round." });
+        } else if ((mats ?? []).length > 0) {
+          setAiRec({ topic: "Review your latest material", reason: "Reinforce what you just uploaded with a quick quiz." });
         }
-      }
 
-      const items: RecentItem[] = (mats ?? []).slice(0, 5).map((m: any) => {
-        const packId = m.study_packs?.[0]?.id ?? null;
-        const tot = packId ? totalByPack.get(packId) ?? 0 : 0;
-        const done = packId ? answeredByPack.get(packId)?.size ?? 0 : 0;
-        const pct = tot > 0 ? Math.min(100, Math.round((done / tot) * 100)) : 0;
-        return { id: m.id, title: m.title, status: m.status, created_at: m.created_at, pack_id: packId, pct };
+        setCoursesCount(mats?.length ?? 0);
+        setStreak(streakInfo.current);
+
+        const board = (lb as any[]) ?? [];
+        const me = board.find((r) => r.user_id === user.id);
+        if (me) setRank({ position: me.rank, total: board.length });
+
+        // Show recent items immediately at 0% so the list renders, then enrich progress.
+        const baseItems: RecentItem[] = (mats ?? []).slice(0, 5).map((m: any) => ({
+          id: m.id, title: m.title, status: m.status, created_at: m.created_at,
+          pack_id: m.study_packs?.[0]?.id ?? null, pct: 0,
+        }));
+        setRecent(baseItems);
+        setLoading(false);
+
+        // PHASE 3 — enrich "Continue Learning" progress (deferred).
+        const packIds = baseItems.map((i) => i.pack_id).filter(Boolean) as string[];
+        if (packIds.length === 0) return;
+        schedule(async () => {
+          if (cancelled) return;
+          const { data: qs } = await supabase
+            .from("questions").select("id, study_pack_id").in("study_pack_id", packIds);
+          const totalByPack = new Map<string, number>();
+          const qToPack = new Map<string, string>();
+          (qs ?? []).forEach((q: any) => {
+            totalByPack.set(q.study_pack_id, (totalByPack.get(q.study_pack_id) ?? 0) + 1);
+            qToPack.set(q.id, q.study_pack_id);
+          });
+          const qIds = (qs ?? []).map((q: any) => q.id);
+          const answeredByPack = new Map<string, Set<string>>();
+          if (qIds.length > 0) {
+            const { data: aa } = await supabase
+              .from("answer_attempts").select("question_id").in("question_id", qIds);
+            (aa ?? []).forEach((row: any) => {
+              const p = qToPack.get(row.question_id);
+              if (!p) return;
+              if (!answeredByPack.has(p)) answeredByPack.set(p, new Set());
+              answeredByPack.get(p)!.add(row.question_id);
+            });
+          }
+          if (cancelled) return;
+          setRecent((prev) => prev.map((r) => {
+            const tot = r.pack_id ? totalByPack.get(r.pack_id) ?? 0 : 0;
+            const done = r.pack_id ? answeredByPack.get(r.pack_id)?.size ?? 0 : 0;
+            return { ...r, pct: tot > 0 ? Math.min(100, Math.round((done / tot) * 100)) : 0 };
+          }));
+        });
       });
-      setRecent(items);
-      setLoading(false);
-    })();
+    };
+
+    run();
     return () => { cancelled = true; };
   }, [reloadKey]);
 
