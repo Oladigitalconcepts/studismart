@@ -352,15 +352,20 @@ const SettingsScreen = ({
   const [cacheBytes, setCacheBytes] = useState<number>(0);
   const [clearing, setClearing] = useState(false);
 
+  const loadLanguage = async () => {
+    const { data: { user } } = await getCurrentUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles").select("language").eq("id", user.id).maybeSingle();
+    if (data?.language) setLangCode(data.language);
+  };
+
   useEffect(() => {
     setCacheBytes(measureCacheBytes());
-    (async () => {
-      const { data: { user } } = await getCurrentUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("profiles").select("language").eq("id", user.id).maybeSingle();
-      if (data?.language) setLangCode(data.language);
-    })();
+    void loadLanguage();
+    const onUpdate = () => { void loadLanguage(); setCacheBytes(measureCacheBytes()); };
+    window.addEventListener("profile-updated", onUpdate);
+    return () => window.removeEventListener("profile-updated", onUpdate);
   }, []);
 
   const langLabel = LANGUAGES.find((l) => l.code === langCode)?.label ?? "English";
