@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GraduationCap, Loader2, User as UserIcon, BookOpen, ChevronDown, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { track } from "@/lib/analytics";
 
 const LEVEL_OPTIONS = [
   "100 Level", "200 Level", "300 Level", "400 Level",
