@@ -71,6 +71,12 @@ export const Onboarding = ({ onComplete }: Props) => {
       return;
     }
     window.dispatchEvent(new CustomEvent("profile-updated"));
+    completedRef.current = true;
+    track("onboarding_step_completed", { step: "identity" });
+    track("onboarding_completed", {
+      ms_spent: Date.now() - startedAt.current,
+      level,
+    });
     onComplete();
   };
 
