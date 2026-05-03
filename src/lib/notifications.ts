@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 
 export type NotifType =
   | "study_reminder"
@@ -44,7 +45,7 @@ export const createNotification = async (
   body?: string,
   data?: Record<string, unknown>,
 ): Promise<AppNotification | null> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCurrentUser();
   if (!user) return null;
 
   // Respect prefs
@@ -121,7 +122,7 @@ export interface StreakInfo {
 }
 
 export const computeStreak = async (): Promise<StreakInfo> => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCurrentUser();
   if (!user) return { current: 0, longest: 0, studiedToday: false };
 
   const since = new Date();
@@ -178,7 +179,7 @@ const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100];
 
 export const checkStreakMilestone = async (current: number) => {
   if (current < 3) return;
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCurrentUser();
   if (!user) return;
 
   const milestone = STREAK_MILESTONES.filter((m) => m <= current).pop();
@@ -221,7 +222,7 @@ const ACHIEVEMENT_DEFS = [
 ];
 
 export const checkAchievements = async (counts: AchievementCounts) => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await getCurrentUser();
   if (!user) return;
   const seenKey = ACHIEVEMENTS_KEY_PREFIX + user.id;
   const seen: string[] = JSON.parse(localStorage.getItem(seenKey) || "[]");
@@ -245,7 +246,7 @@ export const scheduleDailyReminder = (reminderTime: string | null, enabled: bool
   if (!enabled || !reminderTime) return;
 
   const tick = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) return scheduleNext();
     const lastKey = REMINDER_KEY_PREFIX + user.id;
     const today = new Date().toDateString();
@@ -312,7 +313,7 @@ export const enableBrowserPush = async (vapidPublicKey: string | null): Promise<
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
       const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (user && json.endpoint && json.keys?.p256dh && json.keys?.auth) {
         await supabase
           .from("push_subscriptions")
