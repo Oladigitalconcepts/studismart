@@ -4,6 +4,7 @@ import { StatusBar } from "./StatusBar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cacheGet, cacheSet } from "@/lib/offlineCache";
 
@@ -31,7 +32,7 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       const cached = cacheGet<CachedPack>(user?.id ?? null, cacheName);
       if (cached && !cancelled) {
         setPack(cached.pack);

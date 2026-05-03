@@ -4,6 +4,7 @@ import { StatusBar } from "./StatusBar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import { toast } from "@/hooks/use-toast";
 import { cacheGet, cacheSet, enqueueOp, flushQueue } from "@/lib/offlineCache";
 import { computeStreak, checkStreakMilestone, checkAchievements } from "@/lib/notifications";
@@ -43,7 +44,7 @@ export const Practice = ({ studyPackId, onBack, onFinish }: Props) => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       const cacheKey = `questions:${studyPackId ?? "any"}`;
 
       // Hydrate from cache first so practice works offline.
@@ -85,7 +86,7 @@ export const Practice = ({ studyPackId, onBack, onFinish }: Props) => {
     setSubmitted(true);
     const isCorrect = selected === current.correct_index;
     if (isCorrect) setCorrectCount((c) => c + 1);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) return;
 
     const payload = {
@@ -115,7 +116,7 @@ export const Practice = ({ studyPackId, onBack, onFinish }: Props) => {
     }
     // Finish
     setFinishing(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (user) {
       const payload = {
         user_id: user.id,

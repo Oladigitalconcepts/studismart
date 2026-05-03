@@ -3,6 +3,7 @@ import { GraduationCap, Loader2, User as UserIcon, BookOpen, ChevronDown, CheckC
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 
@@ -49,7 +50,7 @@ export const Onboarding = ({ onComplete }: Props) => {
     e.preventDefault();
     if (!canSubmit) return;
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) {
       setSaving(false);
       toast({ title: "You're not signed in", variant: "destructive" });

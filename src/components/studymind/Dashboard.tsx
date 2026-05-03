@@ -7,6 +7,7 @@ import {
 import { StatusBar } from "./StatusBar";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import { useNotifications } from "@/hooks/useNotifications";
 import { computeStreak } from "@/lib/notifications";
 import { toast } from "@/hooks/use-toast";
@@ -81,7 +82,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
     let cancelled = false;
 
     const run = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user || cancelled) return;
 
       // PHASE 1 — profile only. Paints the identity card immediately.

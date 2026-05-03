@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { StatusBar } from "./StatusBar";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export const Profile = () => {
   useEffect(() => { applyTheme(dark); }, [dark]);
 
   const loadProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) return;
     setEmail(user.email ?? "");
     const { data: profile } = await supabase
@@ -351,22 +352,27 @@ const SettingsScreen = ({
   const [cacheBytes, setCacheBytes] = useState<number>(0);
   const [clearing, setClearing] = useState(false);
 
+  const loadLanguage = async () => {
+    const { data: { user } } = await getCurrentUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles").select("language").eq("id", user.id).maybeSingle();
+    if (data?.language) setLangCode(data.language);
+  };
+
   useEffect(() => {
     setCacheBytes(measureCacheBytes());
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("profiles").select("language").eq("id", user.id).maybeSingle();
-      if (data?.language) setLangCode(data.language);
-    })();
+    void loadLanguage();
+    const onUpdate = () => { void loadLanguage(); setCacheBytes(measureCacheBytes()); };
+    window.addEventListener("profile-updated", onUpdate);
+    return () => window.removeEventListener("profile-updated", onUpdate);
   }, []);
 
   const langLabel = LANGUAGES.find((l) => l.code === langCode)?.label ?? "English";
 
   const clearCache = async () => {
     setClearing(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     cacheClearForUser(user?.id ?? null);
     cacheClearForUser(null);
     setCacheBytes(measureCacheBytes());
@@ -527,7 +533,7 @@ const PasswordScreen = ({ onBack }: { onBack: () => void }) => {
     setErrors((e) => ({ ...e, form: undefined }));
 
     // Verify current password via reauth attempt
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user?.email) {
       setLoading(false);
       setErrors((e) => ({ ...e, form: "You're not signed in" }));
@@ -691,7 +697,7 @@ const EditProfileScreen = ({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) return;
       // Pull the last 25 material titles + the saved profile course code.
       const [{ data: materials }, { data: profile }] = await Promise.all([
@@ -777,7 +783,7 @@ const EditProfileScreen = ({
     setAvatarBusy("upload");
     setAvatarError(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) {
       setAvatarBusy(null);
       setAvatarError("You're not signed in.");
@@ -822,7 +828,7 @@ const EditProfileScreen = ({
     if (!avatarUrl) return;
     setAvatarBusy("remove");
     setAvatarError(null);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) {
       setAvatarBusy(null);
       setAvatarError("You're not signed in.");
@@ -875,7 +881,7 @@ const EditProfileScreen = ({
     }
     const run = (async () => {
       setStatus("saving");
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) {
         setStatus("error");
         setErrors((e) => ({ ...e, form: "You're not signed in" }));
@@ -1166,7 +1172,7 @@ const ExtraProfileFields = () => {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) return;
       const { data } = await supabase
         .from("profiles")
@@ -1181,7 +1187,7 @@ const ExtraProfileFields = () => {
   }, []);
 
   const save = async (patch: { level?: string | null; exam_date?: string | null; weekly_goal?: number }) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) return;
     const { error } = await supabase
       .from("profiles")
@@ -1277,7 +1283,7 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) { setLoading(false); return; }
       const { data } = await supabase
         .from("profiles")
@@ -1307,7 +1313,7 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
     const next = { ...prefs, ...patch };
     setPrefs(next);
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
     const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
     setSaving(false);
@@ -1315,6 +1321,7 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
     }
+    window.dispatchEvent(new CustomEvent("profile-updated"));
     // Reschedule local reminder if reminder time or study-reminder toggle changed.
     if (patch.reminder_time !== undefined || patch.notify_study_reminders !== undefined) {
       const { scheduleDailyReminder } = await import("@/lib/notifications");
@@ -1495,7 +1502,7 @@ const EmailPreferencesScreen = ({ onBack }: { onBack: () => void }) => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) { setLoading(false); return; }
       setEmail(user.email ?? "");
       const { data } = await supabase
@@ -1521,11 +1528,12 @@ const EmailPreferencesScreen = ({ onBack }: { onBack: () => void }) => {
     const next = { ...prefs, ...patch };
     setPrefs(next);
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
     const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
     setSaving(false);
     if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+    else window.dispatchEvent(new CustomEvent("profile-updated"));
   };
 
   const unsubscribeAll = async () => {
@@ -1588,7 +1596,7 @@ const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) { setLoading(false); return; }
       const { data } = await supabase
         .from("profiles").select("language").eq("id", user.id).maybeSingle();
@@ -1605,7 +1613,7 @@ const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
     setSaving(code);
     const prev = selected;
     setSelected(code);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(null); return; }
     const { error } = await supabase.from("profiles").update({ language: code }).eq("id", user.id);
     setSaving(null);
@@ -1614,6 +1622,7 @@ const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
     }
+    window.dispatchEvent(new CustomEvent("profile-updated"));
     toast({ title: "Language updated", description: LANGUAGES.find((l) => l.code === code)?.label });
   };
 

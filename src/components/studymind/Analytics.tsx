@@ -3,6 +3,7 @@ import { ArrowLeft, TrendingUp, Target, BookOpen, Clock, Flame, AlertTriangle } 
 import { StatusBar } from "./StatusBar";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import { computeStreak } from "@/lib/notifications";
 import { Loader2 } from "lucide-react";
 
@@ -26,7 +27,7 @@ export const Analytics = ({ onBack }: Props) => {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) return;
       const sinceWeek = new Date(Date.now() - 7 * 86400000).toISOString();
       const [

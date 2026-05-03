@@ -3,6 +3,7 @@ import { ArrowLeft, Trophy, Loader2, Medal } from "lucide-react";
 import { StatusBar } from "./StatusBar";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 
 interface Props { onBack: () => void }
 
@@ -27,7 +28,7 @@ export const Leaderboard = ({ onBack }: Props) => {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       setMe(user?.id ?? null);
       const { data } = await supabase.rpc("weekly_leaderboard");
       setRows((data as any[]) ?? []);

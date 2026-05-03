@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import type { AppNotification } from "@/lib/notifications";
 
 export const useNotifications = () => {
@@ -8,7 +9,7 @@ export const useNotifications = () => {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) {
       setItems([]);
       setUnread(0);
@@ -30,7 +31,7 @@ export const useNotifications = () => {
     void refresh();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       if (!user) return;
       channel = supabase
         .channel(`notifications:${user.id}:${Math.random().toString(36).slice(2)}`)
@@ -50,7 +51,7 @@ export const useNotifications = () => {
   }, [refresh]);
 
   const markAllRead = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) return;
     await supabase
       .from("notifications")
