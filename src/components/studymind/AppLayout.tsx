@@ -64,18 +64,14 @@ export const AppLayout = () => {
     const publicRoutes = ["/", "/auth"];
     const isPublic = publicRoutes.includes(location.pathname);
 
-    if (!user && !isPublic) {
+    if (!user && !isPublic && location.pathname !== "/onboarding") {
       navigate("/", { replace: true });
       return;
     }
-    if (user && needsOnboarding === true && location.pathname !== "/onboarding") {
-      navigate("/onboarding", { replace: true });
-      return;
-    }
-    if (user && needsOnboarding === false && (isPublic || location.pathname === "/onboarding")) {
+    if (user && isPublic) {
       navigate("/home", { replace: true });
     }
-  }, [user, loading, needsOnboarding, location.pathname, navigate]);
+  }, [user, loading, location.pathname, navigate]);
 
   if (loading || (user && needsOnboarding === null)) {
     return (
