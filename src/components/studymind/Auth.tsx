@@ -52,6 +52,7 @@ export const Auth = ({ onAuthed }: Props) => {
           options: { emailRedirectTo: `${window.location.origin}/` },
         });
         if (error) throw error;
+        track("signup_completed", { method: "email" });
         toast({ title: "Welcome to StudyMind AI!" });
         onAuthed({ isNewUser: true });
       } else {
