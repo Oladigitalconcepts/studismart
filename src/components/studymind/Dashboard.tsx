@@ -21,7 +21,9 @@ interface Props {
       | "profile"
       | "practice"
       | "analytics"
-      | "leaderboard",
+      | "leaderboard"
+      | "create-test"
+      | "quiz-for-others",
     payload?: { studyPackId?: string; topic?: string }
   ) => void;
   onOpenNotifications?: () => void;
@@ -348,12 +350,12 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
             color="text-primary" bg="bg-primary-soft" onClick={() => onNavigate("upload")}
           />
           <QuickAction
-            icon={FileCheck2} title="Create Test" subtitle="Coming soon"
-            color="text-blue-500" bg="bg-blue-500/10" onClick={() => comingSoon("Create Test")}
+            icon={FileCheck2} title="Create Test" subtitle="Quiz yourself, beat the clock"
+            color="text-blue-500" bg="bg-blue-500/10" onClick={() => onNavigate("create-test" as any)}
           />
           <QuickAction
-            icon={Users} title="Quiz for Others" subtitle="Coming soon"
-            color="text-orange-500" bg="bg-orange-500/10" onClick={() => comingSoon("Quiz for Others")}
+            icon={Users} title="Quiz for Others" subtitle="Share a link, challenge friends"
+            color="text-orange-500" bg="bg-orange-500/10" onClick={() => onNavigate("quiz-for-others" as any)}
           />
           <QuickAction
             icon={Bot} title="AI Tutor" subtitle="Coming soon"

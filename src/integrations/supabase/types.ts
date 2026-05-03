@@ -311,6 +311,83 @@ export type Database = {
           },
         ]
       }
+      shared_quiz_attempts: {
+        Row: {
+          answers: Json
+          correct: number
+          duration_seconds: number
+          finished_at: string
+          id: string
+          shared_quiz_id: string
+          taker_id: string
+          total: number
+        }
+        Insert: {
+          answers?: Json
+          correct?: number
+          duration_seconds?: number
+          finished_at?: string
+          id?: string
+          shared_quiz_id: string
+          taker_id: string
+          total?: number
+        }
+        Update: {
+          answers?: Json
+          correct?: number
+          duration_seconds?: number
+          finished_at?: string
+          id?: string
+          shared_quiz_id?: string
+          taker_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_quiz_attempts_shared_quiz_id_fkey"
+            columns: ["shared_quiz_id"]
+            isOneToOne: false
+            referencedRelation: "shared_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_quizzes: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          question_ids: string[]
+          reveal_mode: string
+          study_pack_id: string
+          time_limit_seconds: number
+          title: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          question_ids: string[]
+          reveal_mode?: string
+          study_pack_id: string
+          time_limit_seconds?: number
+          title: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          question_ids?: string[]
+          reveal_mode?: string
+          study_pack_id?: string
+          time_limit_seconds?: number
+          title?: string
+          token?: string
+        }
+        Relationships: []
+      }
       study_packs: {
         Row: {
           created_at: string
@@ -345,6 +422,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      test_configs: {
+        Row: {
+          created_at: string
+          id: string
+          num_questions: number
+          reveal_mode: string
+          study_pack_id: string
+          time_limit_seconds: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          num_questions: number
+          reveal_mode: string
+          study_pack_id: string
+          time_limit_seconds: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          num_questions?: number
+          reveal_mode?: string
+          study_pack_id?: string
+          time_limit_seconds?: number
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

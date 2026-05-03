@@ -1,1 +1,10 @@
 project_id = "atffouxdlvfmzcjqvvmy"
+
+[functions.get-shared-quiz]
+verify_jwt = false
+
+[functions.extract-image-text]
+verify_jwt = false
+
+[functions.submit-shared-quiz]
+verify_jwt = false

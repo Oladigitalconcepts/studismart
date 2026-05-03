@@ -17,6 +17,9 @@ import MaterialsPage from "./pages/MaterialsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import CreateTestPage from "./pages/CreateTestPage";
+import QuizForOthersPage from "./pages/QuizForOthersPage";
+import PublicQuizPage from "./pages/PublicQuizPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +48,9 @@ const App = () => (
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/create-test" element={<CreateTestPage />} />
+            <Route path="/quiz-for-others" element={<QuizForOthersPage />} />
+            <Route path="/q/:token" element={<PublicQuizPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Route>

@@ -13,6 +13,7 @@ import {
 } from "@/lib/notifications";
 
 const HIDE_NAV_PREFIXES = ["/", "/auth", "/onboarding", "/splash"];
+const isPublicQuizRoute = (path: string) => path.startsWith("/q/");
 
 export const AppLayout = () => {
   const { user, loading } = useSession();
@@ -45,13 +46,13 @@ export const AppLayout = () => {
   useEffect(() => {
     if (loading) return;
     const publicRoutes = ["/", "/auth"];
-    const isPublic = publicRoutes.includes(location.pathname);
+    const isPublic = publicRoutes.includes(location.pathname) || isPublicQuizRoute(location.pathname);
 
     if (!user && !isPublic && location.pathname !== "/onboarding") {
       navigate("/", { replace: true });
       return;
     }
-    if (user && isPublic) {
+    if (user && publicRoutes.includes(location.pathname)) {
       navigate("/home", { replace: true });
     }
   }, [user, loading, location.pathname, navigate]);
@@ -65,7 +66,7 @@ export const AppLayout = () => {
   }
 
   const hideNav =
-    HIDE_NAV_PREFIXES.includes(location.pathname) || !user;
+    HIDE_NAV_PREFIXES.includes(location.pathname) || isPublicQuizRoute(location.pathname) || !user;
   const padded = !hideNav;
 
   return (
