@@ -27,7 +27,7 @@ const AppleIcon = () => (
   </svg>
 );
 
-interface Props { onAuthed: () => void }
+interface Props { onAuthed: (opts?: { isNewUser?: boolean }) => void }
 
 export const Auth = ({ onAuthed }: Props) => {
   const [mode, setMode] = useState<"login" | "signup">("login");
