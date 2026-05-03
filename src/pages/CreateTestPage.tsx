@@ -33,6 +33,7 @@ const CreateTestPage = () => {
         onStage: (s) => setStage(s),
       });
       setPack(built);
+      track("quiz_created", { mode: "self", num_questions: built.questions.length });
       const cap = Math.min(built.questions.length, 10);
       setConfig((c) => ({ ...c, numQuestions: cap || c.numQuestions }));
       setStep("configure");

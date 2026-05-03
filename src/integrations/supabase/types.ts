@@ -388,6 +388,44 @@ export type Database = {
         }
         Relationships: []
       }
+      slide_decks: {
+        Row: {
+          created_at: string
+          id: string
+          slides: Json
+          study_pack_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slides?: Json
+          study_pack_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slides?: Json
+          study_pack_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slide_decks_study_pack_id_fkey"
+            columns: ["study_pack_id"]
+            isOneToOne: false
+            referencedRelation: "study_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_packs: {
         Row: {
           created_at: string

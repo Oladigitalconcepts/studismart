@@ -3,6 +3,7 @@ import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatTime } from "@/lib/testBuilder";
+import { track } from "@/lib/analytics";
 
 export interface RunnerQuestion {
   id: string;
@@ -39,18 +40,25 @@ export const TestRunner = ({ questions, timeLimitSeconds, revealMode, onFinish, 
   const total = questions.length;
   const q = questions[idx];
 
-  const finish = (a: RunnerAnswer[]) => {
+  const finish = (a: RunnerAnswer[], reason: "completed" | "timeout" = "completed") => {
     if (finishedRef.current) return;
     finishedRef.current = true;
-    onFinish(a, Math.round((Date.now() - startedAt.current) / 1000));
+    const elapsed = Math.round((Date.now() - startedAt.current) / 1000);
+    track("quiz_finished", { reason, total, answered: a.length, correct: a.filter((x) => x.is_correct).length, duration: elapsed });
+    onFinish(a, elapsed);
   };
+
+  useEffect(() => {
+    track("quiz_started", { total, time_limit_seconds: timeLimitSeconds, reveal_mode: revealMode });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {
       setRemaining((r) => {
         if (r <= 1) {
           clearInterval(id);
-          finish(answers);
+          finish(answers, "timeout");
           return 0;
         }
         return r - 1;
@@ -70,6 +78,7 @@ export const TestRunner = ({ questions, timeLimitSeconds, revealMode, onFinish, 
     const isCorrect = picked === q.correct_index;
     const next = [...answers, { question_id: q.id, picked_index: picked, is_correct: isCorrect }];
     setAnswers(next);
+    track("quiz_question_answered", { index: idx, total, is_correct: hideAnswersClient ? null : isCorrect });
     if (revealMode === "immediate" && !hideAnswersClient) {
       setShowFeedback(true);
     } else {

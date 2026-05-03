@@ -38,6 +38,7 @@ const PublicQuizPage = () => {
 
   useEffect(() => {
     if (!token) return;
+    track("quiz_shared_link_opened", { token });
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-shared-quiz?token=${encodeURIComponent(token)}`;
     fetch(url, { headers: { Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` } })
       .then(async (r) => {

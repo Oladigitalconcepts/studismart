@@ -15,7 +15,15 @@ export type AnalyticsEvent =
   | "shared_quiz_link_copied"
   | "public_quiz_started"
   | "public_quiz_submitted"
-  | "public_quiz_signin_for_result";
+  | "public_quiz_signin_for_result"
+  | "quiz_created"
+  | "quiz_shared_link_opened"
+  | "quiz_started"
+  | "quiz_question_answered"
+  | "quiz_finished"
+  | "slides_generation_started"
+  | "slides_generated"
+  | "slides_viewed";
 
 interface EventRecord {
   event: AnalyticsEvent;
