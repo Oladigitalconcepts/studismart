@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "@/hooks/use-toast";
+import { track } from "@/lib/analytics";
 import { z } from "zod";
 
 const schema = z.object({
@@ -51,6 +52,7 @@ export const Auth = ({ onAuthed }: Props) => {
           options: { emailRedirectTo: `${window.location.origin}/` },
         });
         if (error) throw error;
+        track("signup_completed", { method: "email" });
         toast({ title: "Welcome to StudyMind AI!" });
         onAuthed({ isNewUser: true });
       } else {
