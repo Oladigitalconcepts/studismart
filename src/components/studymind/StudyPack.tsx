@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bookmark, ChevronRight, FileQuestion } from "lucide-react";
+import { ArrowLeft, Bookmark, ChevronRight, FileQuestion, Presentation } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { StatusBar } from "./StatusBar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ interface CachedPack {
 }
 
 export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"summary" | "topics" | "questions">("summary");
   const cacheName = `studypack:${studyPackId ?? "latest"}`;
   const initial = cacheGet<CachedPack>(null, cacheName);
@@ -165,6 +167,15 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
                 <span className="flex-1 text-sm font-medium">{t.name}</span>
               </div>
             ))}
+            {pack && topics.length > 0 && (
+              <Button
+                onClick={() => navigate(`/slides/${pack.id}`)}
+                className="w-full h-12 rounded-2xl gradient-primary tap-scale font-semibold mt-2"
+              >
+                <Presentation className="h-4 w-4 mr-2" />
+                Generate slides from topics
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
