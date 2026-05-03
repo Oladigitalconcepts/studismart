@@ -1321,6 +1321,7 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
     }
+    window.dispatchEvent(new CustomEvent("profile-updated"));
     // Reschedule local reminder if reminder time or study-reminder toggle changed.
     if (patch.reminder_time !== undefined || patch.notify_study_reminders !== undefined) {
       const { scheduleDailyReminder } = await import("@/lib/notifications");
