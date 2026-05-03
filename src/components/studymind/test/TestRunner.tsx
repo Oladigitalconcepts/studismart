@@ -58,7 +58,7 @@ export const TestRunner = ({ questions, timeLimitSeconds, revealMode, onFinish, 
       setRemaining((r) => {
         if (r <= 1) {
           clearInterval(id);
-          finish(answers);
+          finish(answers, "timeout");
           return 0;
         }
         return r - 1;
@@ -78,6 +78,7 @@ export const TestRunner = ({ questions, timeLimitSeconds, revealMode, onFinish, 
     const isCorrect = picked === q.correct_index;
     const next = [...answers, { question_id: q.id, picked_index: picked, is_correct: isCorrect }];
     setAnswers(next);
+    track("quiz_question_answered", { index: idx, total, is_correct: hideAnswersClient ? null : isCorrect });
     if (revealMode === "immediate" && !hideAnswersClient) {
       setShowFeedback(true);
     } else {
