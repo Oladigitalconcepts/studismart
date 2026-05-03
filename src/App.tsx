@@ -20,6 +20,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import CreateTestPage from "./pages/CreateTestPage";
 import QuizForOthersPage from "./pages/QuizForOthersPage";
 import PublicQuizPage from "./pages/PublicQuizPage";
+import SlidesPage from "./pages/SlidesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/create-test" element={<CreateTestPage />} />
             <Route path="/quiz-for-others" element={<QuizForOthersPage />} />
             <Route path="/q/:token" element={<PublicQuizPage />} />
+            <Route path="/slides/:packId" element={<SlidesPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Route>
