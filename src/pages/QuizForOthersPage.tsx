@@ -65,6 +65,7 @@ const QuizForOthersPage = () => {
       const url = `${window.location.origin}/q/${token}`;
       setShareUrl(url);
       track("shared_quiz_created", { token, num_questions: subset.length });
+      track("quiz_created", { token, num_questions: subset.length, mode: "shared" });
       setStep("share");
     } catch (e: any) {
       toast({ title: e?.message ?? "Could not create link", variant: "destructive" });
