@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import { toast } from "@/hooks/use-toast";
 import { extractTextFromFile } from "@/lib/extractText";
 import { createNotification, checkAchievements } from "@/lib/notifications";
@@ -40,7 +41,7 @@ export const UploadScreen = ({ onBack, onComplete }: Props) => {
   };
 
   const submit = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getCurrentUser();
     if (!user) { toast({ title: "Please sign in again", variant: "destructive" }); return; }
 
     const finalTitle = title.trim() || file?.name?.replace(/\.[^.]+$/, "") || "Untitled material";

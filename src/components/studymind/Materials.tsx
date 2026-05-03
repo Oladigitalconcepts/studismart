@@ -3,6 +3,7 @@ import { Search, FileText, Plus, Loader2 } from "lucide-react";
 import { StatusBar } from "./StatusBar";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/lib/authUser";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cacheGet, cacheSet } from "@/lib/offlineCache";
@@ -21,7 +22,7 @@ export const Materials = ({ onUpload, onOpenPack }: Props) => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await getCurrentUser();
       // Re-hydrate with user-scoped cache once we know the user id.
       if (user) {
         const cached = cacheGet<any[]>(user.id, "materials");
