@@ -7,7 +7,15 @@ export type AnalyticsEvent =
   | "onboarding_started"
   | "onboarding_step_completed"
   | "onboarding_step_abandoned"
-  | "onboarding_completed";
+  | "onboarding_completed"
+  | "create_test_started"
+  | "test_configured"
+  | "test_completed"
+  | "shared_quiz_created"
+  | "shared_quiz_link_copied"
+  | "public_quiz_started"
+  | "public_quiz_submitted"
+  | "public_quiz_signin_for_result";
 
 interface EventRecord {
   event: AnalyticsEvent;
