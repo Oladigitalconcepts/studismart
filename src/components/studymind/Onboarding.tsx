@@ -23,11 +23,27 @@ export const Onboarding = ({ onComplete }: Props) => {
   const [level, setLevel] = useState("");
   const [course, setCourse] = useState("");
   const [saving, setSaving] = useState(false);
+  const startedAt = useRef<number>(Date.now());
+  const completedRef = useRef(false);
+  const lastStepRef = useRef<string>("identity");
 
   const nameValid = name.trim().length >= 2 && name.trim().length <= NAME_MAX;
   const courseValid = course.trim().length >= 2 && course.trim().length <= COURSE_MAX;
   const levelValid = !!level;
   const canSubmit = nameValid && levelValid && courseValid && !saving;
+
+  // Fire onboarding_started once on mount, and detect drop-off on unmount.
+  useEffect(() => {
+    track("onboarding_started", { step: "identity" });
+    return () => {
+      if (!completedRef.current) {
+        track("onboarding_step_abandoned", {
+          step: lastStepRef.current,
+          ms_spent: Date.now() - startedAt.current,
+        });
+      }
+    };
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
