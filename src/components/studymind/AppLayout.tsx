@@ -18,24 +18,7 @@ export const AppLayout = () => {
   const { user, loading } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
-  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
-
-  // Check onboarding status when user signs in.
-  useEffect(() => {
-    if (!user) { setNeedsOnboarding(null); return; }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("level, course_code, display_name")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      const incomplete = !data?.level || !data?.course_code || !data?.display_name;
-      setNeedsOnboarding(incomplete);
-    })();
-    return () => { cancelled = true; };
-  }, [user]);
+  // (Onboarding is now triggered only after a new signup, not via auto-redirect.)
 
   // Bootstrap notifications on login.
   useEffect(() => {
@@ -64,20 +47,16 @@ export const AppLayout = () => {
     const publicRoutes = ["/", "/auth"];
     const isPublic = publicRoutes.includes(location.pathname);
 
-    if (!user && !isPublic) {
+    if (!user && !isPublic && location.pathname !== "/onboarding") {
       navigate("/", { replace: true });
       return;
     }
-    if (user && needsOnboarding === true && location.pathname !== "/onboarding") {
-      navigate("/onboarding", { replace: true });
-      return;
-    }
-    if (user && needsOnboarding === false && (isPublic || location.pathname === "/onboarding")) {
+    if (user && isPublic) {
       navigate("/home", { replace: true });
     }
-  }, [user, loading, needsOnboarding, location.pathname, navigate]);
+  }, [user, loading, location.pathname, navigate]);
 
-  if (loading || (user && needsOnboarding === null)) {
+  if (loading) {
     return (
       <main className="screen-shell flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -86,7 +65,7 @@ export const AppLayout = () => {
   }
 
   const hideNav =
-    HIDE_NAV_PREFIXES.includes(location.pathname) || !user || needsOnboarding;
+    HIDE_NAV_PREFIXES.includes(location.pathname) || !user;
   const padded = !hideNav;
 
   return (

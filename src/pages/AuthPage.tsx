@@ -3,7 +3,17 @@ import { Auth } from "@/components/studymind/Auth";
 
 const AuthPage = () => {
   const navigate = useNavigate();
-  return <Auth onAuthed={() => navigate("/home", { replace: true })} />;
+  return (
+    <Auth
+      onAuthed={(opts) => {
+        if (opts?.isNewUser) {
+          navigate("/onboarding", { replace: true });
+        } else {
+          navigate("/home", { replace: true });
+        }
+      }}
+    />
+  );
 };
 
 export default AuthPage;

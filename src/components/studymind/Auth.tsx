@@ -27,7 +27,7 @@ const AppleIcon = () => (
   </svg>
 );
 
-interface Props { onAuthed: () => void }
+interface Props { onAuthed: (opts?: { isNewUser?: boolean }) => void }
 
 export const Auth = ({ onAuthed }: Props) => {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -52,7 +52,7 @@ export const Auth = ({ onAuthed }: Props) => {
         });
         if (error) throw error;
         toast({ title: "Welcome to StudyMind AI!" });
-        onAuthed();
+        onAuthed({ isNewUser: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: parsed.data.email,
