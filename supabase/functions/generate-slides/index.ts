@@ -160,12 +160,14 @@ Deno.serve(async (req) => {
     const parsed = JSON.parse(toolCall.function.arguments);
     const title: string = parsed.title ?? material?.title ?? "Slides";
     const slides = Array.isArray(parsed.slides) ? parsed.slides : [];
+    const studyPlan = Array.isArray(parsed.study_plan) ? parsed.study_plan : [];
 
     const upsertPayload = {
       study_pack_id: studyPackId,
       user_id: user.id,
       title,
       slides,
+      study_plan: studyPlan,
     };
 
     let deck;
