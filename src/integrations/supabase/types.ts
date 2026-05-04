@@ -394,6 +394,7 @@ export type Database = {
           id: string
           slides: Json
           study_pack_id: string
+          study_plan: Json
           title: string
           updated_at: string
           user_id: string
@@ -403,6 +404,7 @@ export type Database = {
           id?: string
           slides?: Json
           study_pack_id: string
+          study_plan?: Json
           title: string
           updated_at?: string
           user_id: string
@@ -412,6 +414,7 @@ export type Database = {
           id?: string
           slides?: Json
           study_pack_id?: string
+          study_plan?: Json
           title?: string
           updated_at?: string
           user_id?: string
