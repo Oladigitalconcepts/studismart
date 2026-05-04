@@ -30,9 +30,16 @@ export const BottomNav = () => {
         {tabs.map(({ id, label, icon: Icon, path }) => {
           const isActive = activeId === id;
           return (
-            <button
+          <button
               key={id}
-              onClick={() => navigate(path)}
+              onClick={() => {
+                if (isActive) {
+                  // Re-tapping the active tab resets the inner sub-screen of that tab.
+                  window.dispatchEvent(new CustomEvent("bottom-nav-reset", { detail: { tab: id } }));
+                } else {
+                  navigate(path);
+                }
+              }}
               className="flex flex-col items-center justify-center gap-1 tap-scale relative"
             >
               {isActive && (
