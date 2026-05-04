@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { cacheClearForUser } from "@/lib/offlineCache";
+import { computeStreak, type StreakInfo } from "@/lib/notifications";
 
 type SubScreen =
   | "main" | "streak" | "achievements" | "settings" | "help" | "logout"
@@ -35,8 +36,20 @@ export const Profile = () => {
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stats, setStats] = useState({ packs: 0, attempts: 0, correct: 0, materials: 0 });
+  const [streak, setStreak] = useState<StreakInfo>({ current: 0, longest: 0, studiedToday: false });
+  const [studiedDays, setStudiedDays] = useState<Set<string>>(new Set());
 
   useEffect(() => { applyTheme(dark); }, [dark]);
+
+  // Reset to main when the Profile tab is re-tapped in the bottom nav.
+  useEffect(() => {
+    const onReset = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab: string }>).detail;
+      if (detail?.tab === "profile") setScreen("main");
+    };
+    window.addEventListener("bottom-nav-reset", onReset as EventListener);
+    return () => window.removeEventListener("bottom-nav-reset", onReset as EventListener);
+  }, []);
 
   const loadProfile = async () => {
     const { data: { user } } = await getCurrentUser();
@@ -55,14 +68,25 @@ export const Profile = () => {
   useEffect(() => {
     (async () => {
       await loadProfile();
-      const [{ count: packs }, { count: attempts }, { data: ans }, { count: materials }] = await Promise.all([
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const [{ count: packs }, { count: attempts }, { data: ans }, { count: materials }, { data: recent }] = await Promise.all([
         supabase.from("study_packs").select("*", { count: "exact", head: true }),
         supabase.from("practice_attempts").select("*", { count: "exact", head: true }),
         supabase.from("answer_attempts").select("is_correct"),
         supabase.from("materials").select("*", { count: "exact", head: true }),
+        supabase.from("practice_attempts").select("finished_at").gte("finished_at", since.toISOString()),
       ]);
       const correct = (ans ?? []).filter((a) => a.is_correct).length;
       setStats({ packs: packs ?? 0, attempts: attempts ?? 0, correct, materials: materials ?? 0 });
+      const days = new Set<string>();
+      (recent ?? []).forEach((r) => {
+        const d = new Date(r.finished_at);
+        days.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+      });
+      setStudiedDays(days);
+      const s = await computeStreak();
+      setStreak(s);
     })();
   }, []);
 
@@ -74,8 +98,17 @@ export const Profile = () => {
 
   const initials = (name || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
-  if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} />;
-  if (screen === "achievements") return <AchievementsScreen onBack={() => setScreen("main")} correct={stats.correct} packs={stats.packs} materials={stats.materials} />;
+  // Compute earned badges count using the same definitions as the Achievements screen.
+  const badgesEarned = useMemo(() => computeEarnedBadges({
+    correct: stats.correct,
+    packs: stats.packs,
+    materials: stats.materials,
+    streakCurrent: streak.current,
+    streakLongest: streak.longest,
+  }), [stats, streak]);
+
+  if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} streak={streak} studiedDays={studiedDays} />;
+  if (screen === "achievements") return <AchievementsScreen onBack={() => setScreen("main")} correct={stats.correct} packs={stats.packs} materials={stats.materials} streakCurrent={streak.current} streakLongest={streak.longest} />;
   if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} onEditProfile={() => setScreen("editprofile")} onEmail={() => setScreen("email")} onLanguage={() => setScreen("language")} onDownloads={() => setScreen("downloads")} />;
   if (screen === "help") return <HelpScreen onBack={() => setScreen("main")} />;
   if (screen === "password") return <PasswordScreen onBack={() => setScreen("settings")} />;
@@ -87,8 +120,8 @@ export const Profile = () => {
   if (screen === "logout") return <LogoutScreen onCancel={() => setScreen("main")} />;
 
   const items = [
-    { label: "Study Streak", value: "—", icon: Flame, color: "text-orange-500", onClick: () => setScreen("streak") },
-    { label: "Achievements", value: `${Math.floor(stats.correct / 10)} badges`, icon: Award, color: "text-amber-500", onClick: () => setScreen("achievements") },
+    { label: "Study Streak", value: `${streak.current} day${streak.current === 1 ? "" : "s"}`, icon: Flame, color: "text-orange-500", onClick: () => setScreen("streak") },
+    { label: "Achievements", value: `${badgesEarned} badge${badgesEarned === 1 ? "" : "s"}`, icon: Award, color: "text-amber-500", onClick: () => setScreen("achievements") },
     { label: "Settings", icon: SettingsIcon, color: "text-primary", onClick: () => setScreen("settings") },
     { label: "Help & Support", icon: HelpCircle, color: "text-blue-500", onClick: () => setScreen("help") },
   ];
@@ -182,10 +215,42 @@ const SubHeader = ({ title, onBack }: { title: string; onBack: () => void }) => 
   </>
 );
 
-const StreakScreen = ({ onBack }: { onBack: () => void }) => {
+/* ---------- Achievement definitions (shared between profile + screen) ---------- */
+
+interface BadgeStats {
+  correct: number;
+  packs: number;
+  materials: number;
+  streakCurrent: number;
+  streakLongest: number;
+}
+
+const badgeDefs = (s: BadgeStats) => [
+  { id: "first", title: "First Steps", desc: "Complete your first practice", icon: Sparkles, color: "text-amber-500", bg: "bg-amber-500/10", earned: s.correct > 0 },
+  { id: "streak", title: "7 Day Streak", desc: "Study 7 days in a row", icon: Flame, color: "text-orange-500", bg: "bg-orange-500/10", earned: s.streakLongest >= 7, progress: `${Math.min(s.streakLongest, 7)}/7` },
+  { id: "quiz", title: "Quiz Master", desc: "Answer 100 questions", icon: Target, color: "text-primary", bg: "bg-primary-soft", earned: s.correct >= 100, progress: `${Math.min(s.correct, 100)}/100` },
+  { id: "explorer", title: "Material Explorer", desc: "Upload your first material", icon: BookOpen, color: "text-blue-500", bg: "bg-blue-500/10", earned: s.materials > 0 },
+  { id: "perf", title: "On Fire", desc: "Reach a 3-day streak", icon: Trophy, color: "text-emerald-500", bg: "bg-emerald-500/10", earned: s.streakLongest >= 3, progress: `${Math.min(s.streakLongest, 3)}/3` },
+  { id: "scholar", title: "Scholar", desc: "Create 10 study packs", icon: Layers, color: "text-violet-500", bg: "bg-violet-500/10", earned: s.packs >= 10, progress: `${Math.min(s.packs, 10)}/10` },
+];
+
+const computeEarnedBadges = (s: BadgeStats): number =>
+  badgeDefs(s).filter((b) => b.earned).length;
+
+const StreakScreen = ({ onBack, streak, studiedDays }: { onBack: () => void; streak: StreakInfo; studiedDays: Set<string> }) => {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const today = new Date().getDay(); // 0 Sun .. 6 Sat
-  const todayIdx = today === 0 ? 6 : today - 1;
+  const today = new Date();
+  const jsDay = today.getDay(); // 0 Sun .. 6 Sat
+  const todayIdx = jsDay === 0 ? 6 : jsDay - 1;
+
+  // Build the date for each weekday in the current week (Mon-first).
+  const weekDates: Date[] = days.map((_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + (i - todayIdx));
+    return d;
+  });
+  const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
   return (
     <div className="animate-fade-in">
       <SubHeader title="Study Streak" onBack={onBack} />
@@ -194,20 +259,24 @@ const StreakScreen = ({ onBack }: { onBack: () => void }) => {
           <div className="h-28 w-28 rounded-full bg-orange-500/15 flex items-center justify-center">
             <Flame className="h-14 w-14 text-orange-500" />
           </div>
-          <p className="mt-4 text-3xl font-bold">7 days</p>
-          <p className="text-sm text-muted-foreground">Keep it up! 🔥</p>
+          <p className="mt-4 text-3xl font-bold">{streak.current} day{streak.current === 1 ? "" : "s"}</p>
+          <p className="text-sm text-muted-foreground">
+            {streak.studiedToday ? "Keep it up! 🔥" : streak.current > 0 ? "Study today to keep your streak!" : "Start your streak today 🚀"}
+          </p>
           <p className="text-xs text-muted-foreground mt-1">Study every day to keep your streak alive.</p>
         </div>
 
         <div className="rounded-2xl bg-card border border-border p-4">
           <div className="flex justify-between">
             {days.map((d, i) => {
-              const done = i <= todayIdx;
+              const date = weekDates[i];
+              const isFuture = date.getTime() > today.getTime() && i !== todayIdx;
+              const done = !isFuture && studiedDays.has(dayKey(date));
               const isToday = i === todayIdx;
               return (
                 <div key={d} className="flex flex-col items-center gap-2">
                   <div className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold ${done ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"} ${isToday ? "ring-2 ring-primary/40" : ""}`}>
-                    {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                    {done ? <CheckCircle2 className="h-4 w-4" /> : date.getDate()}
                   </div>
                   <span className="text-[10px] text-muted-foreground">{d}</span>
                 </div>
@@ -220,7 +289,7 @@ const StreakScreen = ({ onBack }: { onBack: () => void }) => {
           <Trophy className="h-6 w-6 text-amber-500" />
           <div className="flex-1">
             <p className="text-sm font-semibold">Longest Streak</p>
-            <p className="text-xs text-muted-foreground">14 days</p>
+            <p className="text-xs text-muted-foreground">{streak.longest} day{streak.longest === 1 ? "" : "s"}</p>
           </div>
         </div>
 
@@ -239,15 +308,11 @@ const StreakScreen = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
-const AchievementsScreen = ({ onBack, correct, packs, materials }: { onBack: () => void; correct: number; packs: number; materials: number }) => {
-  const badges = useMemo(() => ([
-    { id: "first", title: "First Steps", desc: "Complete your first practice", icon: Sparkles, color: "text-amber-500", bg: "bg-amber-500/10", earned: correct > 0 },
-    { id: "streak", title: "7 Day Streak", desc: "Study 7 days in a row", icon: Flame, color: "text-orange-500", bg: "bg-orange-500/10", earned: false },
-    { id: "quiz", title: "Quiz Master", desc: "Answer 100 questions", icon: Target, color: "text-primary", bg: "bg-primary-soft", earned: correct >= 100, progress: `${Math.min(correct, 100)}/100` },
-    { id: "explorer", title: "Material Explorer", desc: "Upload your first material", icon: BookOpen, color: "text-blue-500", bg: "bg-blue-500/10", earned: materials > 0 },
-    { id: "perf", title: "Top Performer", desc: "Score 90% or higher in a quiz", icon: Trophy, color: "text-emerald-500", bg: "bg-emerald-500/10", earned: false },
-    { id: "scholar", title: "Scholar", desc: "Create 10 study packs", icon: Layers, color: "text-violet-500", bg: "bg-violet-500/10", earned: packs >= 10, progress: `${Math.min(packs, 10)}/10` },
-  ]), [correct, packs, materials]);
+const AchievementsScreen = ({ onBack, correct, packs, materials, streakCurrent, streakLongest }: { onBack: () => void; correct: number; packs: number; materials: number; streakCurrent: number; streakLongest: number }) => {
+  const badges = useMemo(
+    () => badgeDefs({ correct, packs, materials, streakCurrent, streakLongest }),
+    [correct, packs, materials, streakCurrent, streakLongest],
+  );
 
   const earned = badges.filter((b) => b.earned).length;
   const [tab, setTab] = useState<"all" | "earned" | "locked">("all");
