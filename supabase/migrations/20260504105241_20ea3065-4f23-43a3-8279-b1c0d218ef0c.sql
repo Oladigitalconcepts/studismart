@@ -1,0 +1,1 @@
+ALTER TABLE public.slide_decks ADD COLUMN IF NOT EXISTS study_plan jsonb NOT NULL DEFAULT '[]'::jsonb;

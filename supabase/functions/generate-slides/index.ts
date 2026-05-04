@@ -17,7 +17,7 @@ const SLIDE_TOOL = {
   type: "function",
   function: {
     name: "build_slide_deck",
-    description: "Produce a professional slide deck from study material.",
+    description: "Produce a professional slide deck and a short study plan from study material.",
     parameters: {
       type: "object",
       properties: {
@@ -46,8 +46,29 @@ const SLIDE_TOOL = {
             additionalProperties: false,
           },
         },
+        study_plan: {
+          type: "array",
+          minItems: 3,
+          maxItems: 7,
+          description: "A short day-by-day study plan covering the key topics.",
+          items: {
+            type: "object",
+            properties: {
+              day: { type: "string", description: "e.g. 'Day 1' or 'Day 2'." },
+              focus: { type: "string", description: "Topic focus for that day (max 10 words)." },
+              tasks: {
+                type: "array",
+                items: { type: "string" },
+                description: "2-4 concrete study tasks (max ~14 words each).",
+              },
+              duration_minutes: { type: "number", description: "Suggested study minutes for the day." },
+            },
+            required: ["day", "focus", "tasks"],
+            additionalProperties: false,
+          },
+        },
       },
-      required: ["title", "slides"],
+      required: ["title", "slides", "study_plan"],
       additionalProperties: false,
     },
   },
@@ -139,12 +160,14 @@ Deno.serve(async (req) => {
     const parsed = JSON.parse(toolCall.function.arguments);
     const title: string = parsed.title ?? material?.title ?? "Slides";
     const slides = Array.isArray(parsed.slides) ? parsed.slides : [];
+    const studyPlan = Array.isArray(parsed.study_plan) ? parsed.study_plan : [];
 
     const upsertPayload = {
       study_pack_id: studyPackId,
       user_id: user.id,
       title,
       slides,
+      study_plan: studyPlan,
     };
 
     let deck;
