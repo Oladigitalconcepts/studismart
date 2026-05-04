@@ -23,7 +23,10 @@ export type AnalyticsEvent =
   | "quiz_finished"
   | "slides_generation_started"
   | "slides_generated"
-  | "slides_viewed";
+  | "slides_viewed"
+  | "slides_edited"
+  | "slides_exported"
+  | "study_plan_viewed";
 
 interface EventRecord {
   event: AnalyticsEvent;
