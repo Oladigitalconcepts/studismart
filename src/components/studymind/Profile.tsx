@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { cacheClearForUser } from "@/lib/offlineCache";
+import { computeStreak, type StreakInfo } from "@/lib/notifications";
 
 type SubScreen =
   | "main" | "streak" | "achievements" | "settings" | "help" | "logout"
