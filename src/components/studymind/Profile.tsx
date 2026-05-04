@@ -36,8 +36,20 @@ export const Profile = () => {
   const [email, setEmail] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stats, setStats] = useState({ packs: 0, attempts: 0, correct: 0, materials: 0 });
+  const [streak, setStreak] = useState<StreakInfo>({ current: 0, longest: 0, studiedToday: false });
+  const [studiedDays, setStudiedDays] = useState<Set<string>>(new Set());
 
   useEffect(() => { applyTheme(dark); }, [dark]);
+
+  // Reset to main when the Profile tab is re-tapped in the bottom nav.
+  useEffect(() => {
+    const onReset = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab: string }>).detail;
+      if (detail?.tab === "profile") setScreen("main");
+    };
+    window.addEventListener("bottom-nav-reset", onReset as EventListener);
+    return () => window.removeEventListener("bottom-nav-reset", onReset as EventListener);
+  }, []);
 
   const loadProfile = async () => {
     const { data: { user } } = await getCurrentUser();
@@ -56,14 +68,25 @@ export const Profile = () => {
   useEffect(() => {
     (async () => {
       await loadProfile();
-      const [{ count: packs }, { count: attempts }, { data: ans }, { count: materials }] = await Promise.all([
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const [{ count: packs }, { count: attempts }, { data: ans }, { count: materials }, { data: recent }] = await Promise.all([
         supabase.from("study_packs").select("*", { count: "exact", head: true }),
         supabase.from("practice_attempts").select("*", { count: "exact", head: true }),
         supabase.from("answer_attempts").select("is_correct"),
         supabase.from("materials").select("*", { count: "exact", head: true }),
+        supabase.from("practice_attempts").select("finished_at").gte("finished_at", since.toISOString()),
       ]);
       const correct = (ans ?? []).filter((a) => a.is_correct).length;
       setStats({ packs: packs ?? 0, attempts: attempts ?? 0, correct, materials: materials ?? 0 });
+      const days = new Set<string>();
+      (recent ?? []).forEach((r) => {
+        const d = new Date(r.finished_at);
+        days.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+      });
+      setStudiedDays(days);
+      const s = await computeStreak();
+      setStreak(s);
     })();
   }, []);
 
@@ -75,8 +98,17 @@ export const Profile = () => {
 
   const initials = (name || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
-  if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} />;
-  if (screen === "achievements") return <AchievementsScreen onBack={() => setScreen("main")} correct={stats.correct} packs={stats.packs} materials={stats.materials} />;
+  // Compute earned badges count using the same definitions as the Achievements screen.
+  const badgesEarned = useMemo(() => computeEarnedBadges({
+    correct: stats.correct,
+    packs: stats.packs,
+    materials: stats.materials,
+    streakCurrent: streak.current,
+    streakLongest: streak.longest,
+  }), [stats, streak]);
+
+  if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} streak={streak} studiedDays={studiedDays} />;
+  if (screen === "achievements") return <AchievementsScreen onBack={() => setScreen("main")} correct={stats.correct} packs={stats.packs} materials={stats.materials} streakCurrent={streak.current} streakLongest={streak.longest} />;
   if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} onEditProfile={() => setScreen("editprofile")} onEmail={() => setScreen("email")} onLanguage={() => setScreen("language")} onDownloads={() => setScreen("downloads")} />;
   if (screen === "help") return <HelpScreen onBack={() => setScreen("main")} />;
   if (screen === "password") return <PasswordScreen onBack={() => setScreen("settings")} />;
@@ -88,8 +120,8 @@ export const Profile = () => {
   if (screen === "logout") return <LogoutScreen onCancel={() => setScreen("main")} />;
 
   const items = [
-    { label: "Study Streak", value: "—", icon: Flame, color: "text-orange-500", onClick: () => setScreen("streak") },
-    { label: "Achievements", value: `${Math.floor(stats.correct / 10)} badges`, icon: Award, color: "text-amber-500", onClick: () => setScreen("achievements") },
+    { label: "Study Streak", value: `${streak.current} day${streak.current === 1 ? "" : "s"}`, icon: Flame, color: "text-orange-500", onClick: () => setScreen("streak") },
+    { label: "Achievements", value: `${badgesEarned} badge${badgesEarned === 1 ? "" : "s"}`, icon: Award, color: "text-amber-500", onClick: () => setScreen("achievements") },
     { label: "Settings", icon: SettingsIcon, color: "text-primary", onClick: () => setScreen("settings") },
     { label: "Help & Support", icon: HelpCircle, color: "text-blue-500", onClick: () => setScreen("help") },
   ];
