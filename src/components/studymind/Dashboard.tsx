@@ -5,6 +5,7 @@ import {
   FileCheck2, Users, Bot, Play,
 } from "lucide-react";
 import { StatusBar } from "./StatusBar";
+import { CoinBalancePill } from "./CoinBalancePill";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/lib/authUser";
@@ -255,18 +256,21 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
           </div>
           <span className="font-bold text-sm tracking-tight">StudyMind</span>
         </div>
-        <button
-          onClick={onOpenNotifications}
-          className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center tap-scale relative"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-          {unread > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
-              {unread > 9 ? "9+" : unread}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <CoinBalancePill compact />
+          <button
+            onClick={onOpenNotifications}
+            className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center tap-scale relative"
+            aria-label="Notifications"
+          >
+            <Bell className="h-4 w-4" />
+            {unread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* SECTION 1: Identity card */}
