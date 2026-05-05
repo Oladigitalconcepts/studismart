@@ -338,12 +338,12 @@ const CircularProgress = ({ percent }: { percent: number }) => {
 };
 
 const StatTile = ({ color, iconBg, icon: Icon, value, label, sub }: { color: string; iconBg: string; icon: any; value: number | string; label: string; sub: string }) => (
-  <div className={`rounded-2xl ${color} p-2.5 flex flex-col items-start gap-1.5`}>
+  <div className={`rounded-2xl ${color} p-2.5 flex flex-col items-start gap-1 min-w-0`}>
     <div className={`h-8 w-8 rounded-xl ${iconBg} flex items-center justify-center shadow-sm`}>
       <Icon className="h-4 w-4 text-white" />
     </div>
-    <p className="font-extrabold text-lg leading-none text-slate-900">{value}</p>
-    <p className="text-[9px] font-bold leading-tight text-slate-700">{label}</p>
-    <p className="text-[8px] text-slate-500 leading-tight -mt-0.5">{sub}</p>
+    <p className="font-extrabold text-base leading-none text-slate-900 tabular-nums">{value}</p>
+    <p className="text-[9px] font-bold leading-tight text-slate-700 break-words">{label}</p>
+    <p className="text-[8px] text-slate-500 leading-tight break-words">{sub}</p>
   </div>
 );
