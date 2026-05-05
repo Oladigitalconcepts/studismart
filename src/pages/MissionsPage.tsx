@@ -239,6 +239,10 @@ const MissionsPage = () => {
             </span>
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
 
 const Sparkle = () => <span className="text-amber-500">✨</span>;
 
