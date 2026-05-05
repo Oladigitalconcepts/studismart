@@ -1,3 +1,4 @@
+import { bumpMission } from "@/lib/missions";
 import { useState } from "react";
 import { ArrowLeft, Loader2, Sparkles, Copy, Share2, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
