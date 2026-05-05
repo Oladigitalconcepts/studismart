@@ -22,20 +22,15 @@ const TILE: Record<string, { tile: string; bg: string; fg: string; btn: string; 
   teal:    { tile: "bg-gradient-to-br from-teal-500 to-cyan-500", bg: "bg-teal-100", fg: "text-teal-600", btn: "bg-teal-500", bar: "bg-teal-500", bonusBg: "bg-teal-50" },
 };
 
-const AD_LIMIT = 3;
-const AD_KEY = () => `ad-watched-${new Date().toISOString().slice(0, 10)}`;
-
 const MissionsPage = () => {
   const navigate = useNavigate();
   const { wallet } = useWallet();
   const [progress, setProgress] = useState<Record<string, MissionRow>>({});
-  const [adsWatched, setAdsWatched] = useState(0);
 
   const load = async () => {
     await triggerDailyLogin();
     const map = await fetchTodayMissions();
     setProgress(map);
-    try { setAdsWatched(parseInt(localStorage.getItem(AD_KEY()) || "0", 10) || 0); } catch { /* noop */ }
   };
 
   useEffect(() => {
@@ -51,17 +46,6 @@ const MissionsPage = () => {
   const handleClaim = async (m: MissionDef) => {
     try { await claimMission(m); toast({ title: `+${m.reward} coins`, description: `${m.title} claimed!` }); load(); }
     catch (e: any) { toast({ title: "Could not claim", description: e?.message ?? "Try again", variant: "destructive" }); }
-  };
-
-  const watchAd = async () => {
-    if (adsWatched >= AD_LIMIT) { toast({ title: "Daily ad limit reached", description: "Come back tomorrow." }); return; }
-    toast({ title: "Loading ad…", description: "Demo mode — instant reward." });
-    setTimeout(async () => {
-      await earn(5, "watch_ad");
-      const next = adsWatched + 1; setAdsWatched(next);
-      try { localStorage.setItem(AD_KEY(), String(next)); } catch { /* noop */ }
-      toast({ title: "+5 coins", description: "Thanks for watching!" });
-    }, 600);
   };
 
   return (
