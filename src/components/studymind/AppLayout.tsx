@@ -11,6 +11,8 @@ import {
   computeStreak,
   checkStreakMilestone,
 } from "@/lib/notifications";
+import { ensureWallet } from "@/lib/coins";
+import { triggerDailyLogin } from "@/lib/missions";
 
 const HIDE_NAV_PREFIXES = ["/", "/auth", "/onboarding", "/splash"];
 const isPublicQuizRoute = (path: string) => path.startsWith("/q/");
@@ -38,6 +40,9 @@ export const AppLayout = () => {
       );
       const streak = await computeStreak();
       if (streak.current > 0) await checkStreakMilestone(streak.current);
+      // Initialize coin wallet & mark daily login mission.
+      await ensureWallet();
+      await triggerDailyLogin();
     })();
     return () => { cancelled = true; };
   }, [user]);

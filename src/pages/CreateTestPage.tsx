@@ -1,3 +1,4 @@
+import { bumpMission } from "@/lib/missions";
 import { useState } from "react";
 import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -73,6 +74,11 @@ const CreateTestPage = () => {
     const correct = answers.filter((a) => a.is_correct).length;
     setResult({ correct, total: running.length, duration, review });
     track("test_completed", { correct, total: running.length, duration });
+    bumpMission("complete_test").catch(() => {});
+    if (running.length > 0 && correct / running.length >= 0.8) {
+      bumpMission("topper").catch(() => {});
+    }
+    bumpMission("weekly_champion").catch(() => {});
     setStep("result");
   };
 

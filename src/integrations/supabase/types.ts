@@ -49,6 +49,36 @@ export type Database = {
           },
         ]
       }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          kind: string
+          meta: Json
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          kind: string
+          meta?: Json
+          reason: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          meta?: Json
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           created_at: string
@@ -81,6 +111,33 @@ export type Database = {
           status?: string
           storage_path?: string | null
           title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mission_progress: {
+        Row: {
+          claimed_at: string | null
+          count: number
+          day: string
+          id: string
+          mission_key: string
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          count?: number
+          day?: string
+          id?: string
+          mission_key: string
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          count?: number
+          day?: string
+          id?: string
+          mission_key?: string
           user_id?: string
         }
         Relationships: []
@@ -388,6 +445,95 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_lessons: {
+        Row: {
+          body: string
+          coin_reward: number
+          duration_min: number
+          id: string
+          position: number
+          skill_id: string
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          body?: string
+          coin_reward?: number
+          duration_min?: number
+          id?: string
+          position: number
+          skill_id: string
+          title: string
+          xp_reward?: number
+        }
+        Update: {
+          body?: string
+          coin_reward?: number
+          duration_min?: number
+          id?: string
+          position?: number
+          skill_id?: string
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_lessons_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          color: string
+          cost_coins: number
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          lessons_count: number
+          level: string
+          popular: boolean
+          rating: number
+          slug: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          color?: string
+          cost_coins?: number
+          created_at?: string
+          description: string
+          icon?: string
+          id?: string
+          lessons_count?: number
+          level?: string
+          popular?: boolean
+          rating?: number
+          slug: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          color?: string
+          cost_coins?: number
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          lessons_count?: number
+          level?: string
+          popular?: boolean
+          rating?: number
+          slug?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
       slide_decks: {
         Row: {
           created_at: string
@@ -494,11 +640,117 @@ export type Database = {
         }
         Relationships: []
       }
+      user_skills: {
+        Row: {
+          completed_lessons: number
+          id: string
+          last_lesson_at: string | null
+          skill_id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_lessons?: number
+          id?: string
+          last_lesson_at?: string | null
+          skill_id: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_lessons?: number
+          id?: string
+          last_lesson_at?: string | null
+          skill_id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          coins: number
+          created_at: string
+          last_login_date: string | null
+          level: number
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          coins?: number
+          created_at?: string
+          last_login_date?: string | null
+          level?: number
+          streak_days?: number
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          last_login_date?: string | null
+          level?: number
+          streak_days?: number
+          updated_at?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      adjust_coins: {
+        Args: { _amount: number; _kind: string; _meta?: Json; _reason: string }
+        Returns: {
+          coins: number
+          created_at: string
+          last_login_date: string | null
+          level: number
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ensure_wallet: {
+        Args: never
+        Returns: {
+          coins: number
+          created_at: string
+          last_login_date: string | null
+          level: number
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       weekly_leaderboard: {
         Args: never
         Returns: {
