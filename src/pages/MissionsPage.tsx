@@ -157,8 +157,8 @@ const MissionsPage = () => {
                       <CheckCircle2 className="h-3.5 w-3.5" /> Done
                     </span>
                   ) : ready ? (
-                    <button onClick={() => handleClaim(m)} className="text-[11px] font-extrabold rounded-xl px-4 py-2 bg-emerald-500 text-white tap-scale flex-shrink-0 shadow-sm shadow-emerald-500/30">
-                      Claim
+                    <button onClick={() => handleClaim(m)} disabled={claiming === m.key} className="text-[11px] font-extrabold rounded-xl px-4 py-2 bg-emerald-500 text-white tap-scale flex-shrink-0 shadow-sm shadow-emerald-500/30 disabled:opacity-60">
+                      {claiming === m.key ? "…" : "Claim"}
                     </button>
                   ) : m.target > 1 ? (
                     <span className="text-[11px] font-extrabold rounded-xl px-3.5 py-2 bg-violet-50 text-violet-700 flex-shrink-0">
