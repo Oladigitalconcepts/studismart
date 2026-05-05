@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.credit_purchase(text) FROM PUBLIC, anon, authenticated;

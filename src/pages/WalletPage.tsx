@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bell, Wallet as WalletIcon, Crown, Gift, ShoppingCart, History, ArrowDownLeft, ArrowUpRight, Coins, Plus, Sparkles, FileText, UserPlus, Calendar, Flame, Bot } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Bell, Wallet as WalletIcon, Crown, Gift, ShoppingCart, History, ArrowDownLeft, ArrowUpRight, Coins, Plus, Sparkles, FileText, UserPlus, Calendar, Flame, Bot, Loader2 } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { useWallet } from "@/hooks/useWallet";
-import { COIN_PACKS, detectCurrency, formatPrice, purchase } from "@/lib/coins";
+import { COIN_PACKS, detectCurrency, formatPrice } from "@/lib/coins";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -31,7 +31,10 @@ const WalletPage = () => {
   const navigate = useNavigate();
   const { wallet, refresh } = useWallet();
   const [txs, setTxs] = useState<Tx[]>([]);
+  const [buying, setBuying] = useState<string | null>(null);
+  const [verifyingRef, setVerifyingRef] = useState<string | null>(null);
   const ccy = useMemo(() => detectCurrency(), []);
+  const [params, setParams] = useSearchParams();
 
   useEffect(() => {
     const load = async () => {
@@ -48,14 +51,49 @@ const WalletPage = () => {
     return () => window.removeEventListener("wallet-updated", onUpd);
   }, []);
 
-  const buyPack = async (packId: string, coins: number, price: number) => {
-    // Mock checkout — instant grant
+  // Handle return from Paystack — poll the purchase row until webhook credits it.
+  useEffect(() => {
+    const reference = params.get("reference") || params.get("trxref");
+    if (!reference) return;
+    setVerifyingRef(reference);
+    let attempts = 0;
+    const timer = setInterval(async () => {
+      attempts++;
+      const { data } = await supabase
+        .from("coin_purchases")
+        .select("status, coins")
+        .eq("reference", reference)
+        .maybeSingle();
+      if (data?.status === "credited") {
+        clearInterval(timer);
+        setVerifyingRef(null);
+        toast({ title: "Payment confirmed", description: `+${data.coins.toLocaleString()} coins added to your wallet` });
+        refresh();
+        window.dispatchEvent(new CustomEvent("wallet-updated"));
+        params.delete("reference"); params.delete("trxref");
+        setParams(params, { replace: true });
+      } else if (attempts >= 20) {
+        clearInterval(timer);
+        setVerifyingRef(null);
+        toast({ title: "Still processing", description: "Coins will appear once Paystack confirms the payment.", });
+      }
+    }, 1500);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const buyPack = async (packId: string) => {
+    setBuying(packId);
     try {
-      await purchase(coins, `buy_${packId}`, { ccy, price });
-      toast({ title: "Coins added!", description: `+${coins.toLocaleString()} coins` });
-      refresh();
+      const { data, error } = await supabase.functions.invoke("paystack-init", {
+        body: { pack_id: packId, currency: ccy, callback_url: `${window.location.origin}/wallet` },
+      });
+      if (error) throw error;
+      if (!data?.authorization_url) throw new Error("No checkout URL returned");
+      window.location.href = data.authorization_url;
     } catch (e: any) {
-      toast({ title: "Purchase failed", description: e?.message ?? "Try again", variant: "destructive" });
+      toast({ title: "Could not start payment", description: e?.message ?? "Try again", variant: "destructive" });
+      setBuying(null);
     }
   };
 
@@ -147,16 +185,19 @@ const WalletPage = () => {
                 <p className="text-[10px] text-muted-foreground">Coins</p>
                 {p.bonus && <p className="text-[10px] text-emerald-600 font-bold mt-0.5">{p.bonus}</p>}
                 <button
-                  onClick={() => buyPack(p.id, p.coins, p.prices[ccy])}
-                  className="mt-2 w-full rounded-xl bg-primary-soft text-primary font-bold text-xs py-2 tap-scale"
+                  onClick={() => buyPack(p.id)}
+                  disabled={buying === p.id || verifyingRef !== null}
+                  className="mt-2 w-full rounded-xl bg-primary-soft text-primary font-bold text-xs py-2 tap-scale inline-flex items-center justify-center gap-1 disabled:opacity-60"
                 >
-                  {formatPrice(p.prices[ccy], ccy)}
+                  {buying === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : formatPrice(p.prices[ccy], ccy)}
                 </button>
               </div>
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground text-center mt-2">Real payments coming soon · purchases credit instantly for testing</p>
+        <p className="text-[10px] text-muted-foreground text-center mt-2">
+          {verifyingRef ? "Verifying your payment with Paystack…" : "Secure payments via Paystack · coins credited after confirmation"}
+        </p>
       </div>
 
       {/* EARN COINS QUICK LIST */}
