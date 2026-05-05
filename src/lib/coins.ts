@@ -51,7 +51,7 @@ export async function getWallet(): Promise<Wallet | null> {
 
 export async function earn(amount: number, reason: string, meta: Record<string, any> = {}) {
   const { data, error } = await supabase.rpc("adjust_coins", {
-    _amount: amount, _kind: "earn", _reason: reason, _meta: meta,
+    _amount: amount, _kind: "earn", _reason: reason, _meta: meta as any,
   });
   if (error) throw error;
   broadcast();
@@ -61,7 +61,7 @@ export async function earn(amount: number, reason: string, meta: Record<string, 
 export async function spend(reason: SpendReason, meta: Record<string, any> = {}) {
   const cost = COSTS[reason];
   const { data, error } = await supabase.rpc("adjust_coins", {
-    _amount: -cost, _kind: "spend", _reason: reason, _meta: meta,
+    _amount: -cost, _kind: "spend", _reason: reason, _meta: meta as any,
   });
   if (error) throw error;
   broadcast();
@@ -70,7 +70,7 @@ export async function spend(reason: SpendReason, meta: Record<string, any> = {})
 
 export async function purchase(amount: number, reason: string, meta: Record<string, any> = {}) {
   const { data, error } = await supabase.rpc("adjust_coins", {
-    _amount: amount, _kind: "purchase", _reason: reason, _meta: meta,
+    _amount: amount, _kind: "purchase", _reason: reason, _meta: meta as any,
   });
   if (error) throw error;
   broadcast();
