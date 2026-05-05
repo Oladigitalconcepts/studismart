@@ -222,25 +222,23 @@ const MissionsPage = () => {
           </div>
         </div>
 
-        {/* Watch & Earn */}
+        {/* Earn more — link to wallet to top up via Paystack */}
         <div className="px-5 mt-6">
-          <div className="rounded-3xl gradient-night text-white p-4 flex items-center gap-3 shadow-lg overflow-hidden relative">
+          <button
+            onClick={() => navigate("/wallet")}
+            className="w-full rounded-3xl gradient-night text-white p-4 flex items-center gap-3 shadow-lg overflow-hidden relative tap-scale text-left"
+          >
             <div className="absolute -right-10 -top-10 w-32 h-32 bg-violet-500/30 blur-2xl rounded-full" />
-            <div className="text-3xl flex-shrink-0">🎁</div>
+            <div className="text-3xl flex-shrink-0">💰</div>
             <div className="flex-1 min-w-0 relative">
-              <p className="font-extrabold text-sm">Watch & Earn</p>
-              <p className="text-[10px] text-white/75 mt-0.5 leading-snug">Watch a short video and earn <span className="text-amber-300 font-bold">5 coins</span> instantly! ({adsWatched}/{AD_LIMIT})</p>
+              <p className="font-extrabold text-sm">Need more coins?</p>
+              <p className="text-[10px] text-white/75 mt-0.5 leading-snug">Top up securely with Paystack or finish more missions.</p>
             </div>
-            <button onClick={watchAd} disabled={adsWatched >= AD_LIMIT}
-              className="bg-white text-violet-700 text-xs font-extrabold rounded-xl px-4 py-2.5 tap-scale flex-shrink-0 disabled:opacity-50 inline-flex items-center gap-1.5 relative">
-              <Play className="h-3 w-3 fill-violet-700" /> {adsWatched >= AD_LIMIT ? "Done" : "Watch Ad"}
-            </button>
-          </div>
+            <span className="bg-white text-violet-700 text-xs font-extrabold rounded-xl px-4 py-2.5 flex-shrink-0 inline-flex items-center gap-1.5 relative">
+              Open Wallet
+            </span>
+          </button>
         </div>
-      </div>
-    </div>
-  );
-};
 
 const Sparkle = () => <span className="text-amber-500">✨</span>;
 
