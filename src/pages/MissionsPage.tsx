@@ -5,7 +5,7 @@ import { StatusBar } from "@/components/studymind/StatusBar";
 import { CoinBalancePill } from "@/components/studymind/CoinBalancePill";
 import { useWallet } from "@/hooks/useWallet";
 import { DAILY_MISSIONS, BONUS_MISSIONS, fetchTodayMissions, claimMission, type MissionDef, type MissionRow, triggerDailyLogin } from "@/lib/missions";
-import { earn } from "@/lib/coins";
+
 import { toast } from "@/hooks/use-toast";
 
 const ICONS: Record<string, any> = {
