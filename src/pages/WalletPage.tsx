@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Bell, Wallet as WalletIcon, Crown, Gift, ShoppingCart, History, ArrowDownLeft, ArrowUpRight, Coins, Plus, Sparkles, FileText, UserPlus, Calendar, Flame, Bot, Loader2, CheckCircle2, XCircle, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
@@ -267,34 +267,13 @@ const WalletPage = () => {
             <h2 className="font-extrabold text-[16px] text-slate-900">Popular Coin Packs</h2>
             <span className="text-[10px] text-slate-400 font-semibold">Swipe →</span>
           </div>
-          <div className="flex gap-3 -mx-4 px-4 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1">
-            {COIN_PACKS.map((p) => (
-              <div
-                key={p.id}
-                className={`relative snap-start flex-shrink-0 rounded-2xl p-3.5 ${p.best ? "border-2 border-violet-500 bg-violet-50/40" : "border border-slate-100 bg-white"}`}
-                style={{ width: "calc((100% - 12px) / 2)" }}
-              >
-                {p.best && (
-                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-500 text-white text-[9px] font-extrabold whitespace-nowrap shadow-sm">
-                    🔥 Best Value
-                  </div>
-                )}
-                <div className="flex flex-col items-center text-center pt-1">
-                  <div className="text-[34px] leading-none">{p.id === "pack_2500" ? "🎁" : "🪙"}</div>
-                  <p className="font-extrabold text-xl leading-none mt-2 text-slate-900 tabular-nums">{p.coins.toLocaleString()}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Coins</p>
-                  {p.bonus && <p className="text-[9px] text-emerald-600 font-extrabold mt-0.5 truncate max-w-full">{p.bonus}</p>}
-                  <button
-                    onClick={() => buyPack(p.id)}
-                    disabled={buying === p.id || verifyingRef !== null}
-                    className="mt-2.5 w-full rounded-xl bg-violet-50 text-violet-700 font-extrabold text-[12px] py-2 tap-scale inline-flex items-center justify-center gap-1 disabled:opacity-60"
-                  >
-                    {buying === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : formatPrice(p.prices[ccy], ccy)}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PackSlider
+            packs={COIN_PACKS}
+            ccy={ccy}
+            buying={buying}
+            verifyingRef={verifyingRef}
+            onBuy={buyPack}
+          />
           {verifyingRef && (
             <p className="text-[10px] text-violet-600 text-center mt-3 font-semibold">Verifying your payment with Paystack…</p>
           )}
@@ -381,6 +360,75 @@ const WalletPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const PackSlider = ({ packs, ccy, buying, verifyingRef, onBuy }: { packs: typeof COIN_PACKS; ccy: any; buying: string | null; verifyingRef: string | null; onBuy: (id: string) => void }) => {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(packs.length / 2));
+
+  const onScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const pageW = el.clientWidth;
+    const idx = Math.round(el.scrollLeft / pageW);
+    setActive(Math.min(pageCount - 1, Math.max(0, idx)));
+  };
+
+  const goTo = (i: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+  };
+
+  return (
+    <>
+      <div
+        ref={scrollerRef}
+        onScroll={onScroll}
+        className="flex gap-3 -mx-4 px-4 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1 scroll-smooth"
+      >
+        {packs.map((p) => (
+          <div
+            key={p.id}
+            className={`relative snap-start flex-shrink-0 rounded-2xl p-3.5 ${p.best ? "border-2 border-violet-500 bg-violet-50/40" : "border border-slate-100 bg-white"}`}
+            style={{ width: "calc((100% - 12px) / 2)" }}
+          >
+            {p.best && (
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-500 text-white text-[9px] font-extrabold whitespace-nowrap shadow-sm">
+                🔥 Best Value
+              </div>
+            )}
+            <div className="flex flex-col items-center text-center pt-1">
+              <div className="text-[34px] leading-none">{p.id === "pack_2500" ? "🎁" : "🪙"}</div>
+              <p className="font-extrabold text-xl leading-none mt-2 text-slate-900 tabular-nums">{p.coins.toLocaleString()}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Coins</p>
+              {p.bonus && <p className="text-[9px] text-emerald-600 font-extrabold mt-0.5 truncate max-w-full">{p.bonus}</p>}
+              <button
+                onClick={() => onBuy(p.id)}
+                disabled={buying === p.id || verifyingRef !== null}
+                className="mt-2.5 w-full rounded-xl bg-violet-50 text-violet-700 font-extrabold text-[12px] py-2 tap-scale inline-flex items-center justify-center gap-1 disabled:opacity-60"
+              >
+                {buying === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : formatPrice(p.prices[ccy], ccy)}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {pageCount > 1 && (
+        <div className="flex items-center justify-center gap-1.5 mt-3">
+          {Array.from({ length: pageCount }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => goTo(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all ${active === i ? "w-5 bg-violet-500" : "w-1.5 bg-slate-300"}`}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 };
 
