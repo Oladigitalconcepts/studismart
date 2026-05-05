@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Calendar, Flame, FileText, Bot, StickyNote, Share2, UserPlus, Trophy, ShieldCheck, Coins, Play, Gift, Lock, CheckCircle2, Info, Star } from "lucide-react";
+import { ArrowLeft, Calendar, Flame, FileText, Bot, StickyNote, Share2, UserPlus, Trophy, ShieldCheck, Coins, Gift, Lock, CheckCircle2, Info, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { CoinBalancePill } from "@/components/studymind/CoinBalancePill";
 import { useWallet } from "@/hooks/useWallet";
 import { DAILY_MISSIONS, BONUS_MISSIONS, fetchTodayMissions, claimMission, type MissionDef, type MissionRow, triggerDailyLogin } from "@/lib/missions";
-import { earn } from "@/lib/coins";
+
 import { toast } from "@/hooks/use-toast";
 
 const ICONS: Record<string, any> = {
@@ -22,20 +22,15 @@ const TILE: Record<string, { tile: string; bg: string; fg: string; btn: string; 
   teal:    { tile: "bg-gradient-to-br from-teal-500 to-cyan-500", bg: "bg-teal-100", fg: "text-teal-600", btn: "bg-teal-500", bar: "bg-teal-500", bonusBg: "bg-teal-50" },
 };
 
-const AD_LIMIT = 3;
-const AD_KEY = () => `ad-watched-${new Date().toISOString().slice(0, 10)}`;
-
 const MissionsPage = () => {
   const navigate = useNavigate();
   const { wallet } = useWallet();
   const [progress, setProgress] = useState<Record<string, MissionRow>>({});
-  const [adsWatched, setAdsWatched] = useState(0);
 
   const load = async () => {
     await triggerDailyLogin();
     const map = await fetchTodayMissions();
     setProgress(map);
-    try { setAdsWatched(parseInt(localStorage.getItem(AD_KEY()) || "0", 10) || 0); } catch { /* noop */ }
   };
 
   useEffect(() => {
@@ -45,23 +40,12 @@ const MissionsPage = () => {
     return () => window.removeEventListener("wallet-updated", onUpd);
   }, []);
 
-  const streakDays = wallet?.streak_days ?? 3;
+  const streakDays = wallet?.streak_days ?? 0;
   const completedCount = useMemo(() => DAILY_MISSIONS.filter((m) => progress[m.key]?.claimed_at).length, [progress]);
 
   const handleClaim = async (m: MissionDef) => {
     try { await claimMission(m); toast({ title: `+${m.reward} coins`, description: `${m.title} claimed!` }); load(); }
     catch (e: any) { toast({ title: "Could not claim", description: e?.message ?? "Try again", variant: "destructive" }); }
-  };
-
-  const watchAd = async () => {
-    if (adsWatched >= AD_LIMIT) { toast({ title: "Daily ad limit reached", description: "Come back tomorrow." }); return; }
-    toast({ title: "Loading ad…", description: "Demo mode — instant reward." });
-    setTimeout(async () => {
-      await earn(5, "watch_ad");
-      const next = adsWatched + 1; setAdsWatched(next);
-      try { localStorage.setItem(AD_KEY(), String(next)); } catch { /* noop */ }
-      toast({ title: "+5 coins", description: "Thanks for watching!" });
-    }, 600);
   };
 
   return (
@@ -222,20 +206,22 @@ const MissionsPage = () => {
           </div>
         </div>
 
-        {/* Watch & Earn */}
+        {/* Earn more — link to wallet to top up via Paystack */}
         <div className="px-5 mt-6">
-          <div className="rounded-3xl gradient-night text-white p-4 flex items-center gap-3 shadow-lg overflow-hidden relative">
+          <button
+            onClick={() => navigate("/wallet")}
+            className="w-full rounded-3xl gradient-night text-white p-4 flex items-center gap-3 shadow-lg overflow-hidden relative tap-scale text-left"
+          >
             <div className="absolute -right-10 -top-10 w-32 h-32 bg-violet-500/30 blur-2xl rounded-full" />
-            <div className="text-3xl flex-shrink-0">🎁</div>
+            <div className="text-3xl flex-shrink-0">💰</div>
             <div className="flex-1 min-w-0 relative">
-              <p className="font-extrabold text-sm">Watch & Earn</p>
-              <p className="text-[10px] text-white/75 mt-0.5 leading-snug">Watch a short video and earn <span className="text-amber-300 font-bold">5 coins</span> instantly! ({adsWatched}/{AD_LIMIT})</p>
+              <p className="font-extrabold text-sm">Need more coins?</p>
+              <p className="text-[10px] text-white/75 mt-0.5 leading-snug">Top up securely with Paystack or finish more missions.</p>
             </div>
-            <button onClick={watchAd} disabled={adsWatched >= AD_LIMIT}
-              className="bg-white text-violet-700 text-xs font-extrabold rounded-xl px-4 py-2.5 tap-scale flex-shrink-0 disabled:opacity-50 inline-flex items-center gap-1.5 relative">
-              <Play className="h-3 w-3 fill-violet-700" /> {adsWatched >= AD_LIMIT ? "Done" : "Watch Ad"}
-            </button>
-          </div>
+            <span className="bg-white text-violet-700 text-xs font-extrabold rounded-xl px-4 py-2.5 flex-shrink-0 inline-flex items-center gap-1.5 relative">
+              Open Wallet
+            </span>
+          </button>
         </div>
       </div>
     </div>
