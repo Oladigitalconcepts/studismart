@@ -26,6 +26,7 @@ const MissionsPage = () => {
   const navigate = useNavigate();
   const { wallet } = useWallet();
   const [progress, setProgress] = useState<Record<string, MissionRow>>({});
+  const [claiming, setClaiming] = useState<string | null>(null);
 
   const load = async () => {
     await triggerDailyLogin();
@@ -44,8 +45,11 @@ const MissionsPage = () => {
   const completedCount = useMemo(() => DAILY_MISSIONS.filter((m) => progress[m.key]?.claimed_at).length, [progress]);
 
   const handleClaim = async (m: MissionDef) => {
-    try { await claimMission(m); toast({ title: `+${m.reward} coins`, description: `${m.title} claimed!` }); load(); }
+    if (claiming) return;
+    setClaiming(m.key);
+    try { await claimMission(m); toast({ title: `+${m.reward} coins`, description: `${m.title} claimed!` }); await load(); window.dispatchEvent(new CustomEvent("wallet-updated")); }
     catch (e: any) { toast({ title: "Could not claim", description: e?.message ?? "Try again", variant: "destructive" }); }
+    finally { setClaiming(null); }
   };
 
   return (
