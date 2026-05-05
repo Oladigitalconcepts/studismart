@@ -267,34 +267,13 @@ const WalletPage = () => {
             <h2 className="font-extrabold text-[16px] text-slate-900">Popular Coin Packs</h2>
             <span className="text-[10px] text-slate-400 font-semibold">Swipe →</span>
           </div>
-          <div className="flex gap-3 -mx-4 px-4 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1">
-            {COIN_PACKS.map((p) => (
-              <div
-                key={p.id}
-                className={`relative snap-start flex-shrink-0 rounded-2xl p-3.5 ${p.best ? "border-2 border-violet-500 bg-violet-50/40" : "border border-slate-100 bg-white"}`}
-                style={{ width: "calc((100% - 12px) / 2)" }}
-              >
-                {p.best && (
-                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-500 text-white text-[9px] font-extrabold whitespace-nowrap shadow-sm">
-                    🔥 Best Value
-                  </div>
-                )}
-                <div className="flex flex-col items-center text-center pt-1">
-                  <div className="text-[34px] leading-none">{p.id === "pack_2500" ? "🎁" : "🪙"}</div>
-                  <p className="font-extrabold text-xl leading-none mt-2 text-slate-900 tabular-nums">{p.coins.toLocaleString()}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Coins</p>
-                  {p.bonus && <p className="text-[9px] text-emerald-600 font-extrabold mt-0.5 truncate max-w-full">{p.bonus}</p>}
-                  <button
-                    onClick={() => buyPack(p.id)}
-                    disabled={buying === p.id || verifyingRef !== null}
-                    className="mt-2.5 w-full rounded-xl bg-violet-50 text-violet-700 font-extrabold text-[12px] py-2 tap-scale inline-flex items-center justify-center gap-1 disabled:opacity-60"
-                  >
-                    {buying === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : formatPrice(p.prices[ccy], ccy)}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <PackSlider
+            packs={COIN_PACKS}
+            ccy={ccy}
+            buying={buying}
+            verifyingRef={verifyingRef}
+            onBuy={buyPack}
+          />
           {verifyingRef && (
             <p className="text-[10px] text-violet-600 text-center mt-3 font-semibold">Verifying your payment with Paystack…</p>
           )}
