@@ -260,30 +260,34 @@ const WalletPage = () => {
         </div>
       )}
 
-      {/* COIN PACKS */}
+      {/* COIN PACKS — 2 visible, slide for the rest */}
       <div id="packs" className="px-5 mt-4">
         <div className="rounded-3xl bg-white border border-slate-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-extrabold text-[16px] text-slate-900">Popular Coin Packs</h2>
-            <button className="text-xs font-bold text-violet-600">See All</button>
+            <span className="text-[10px] text-slate-400 font-semibold">Swipe →</span>
           </div>
-          <div className="grid grid-cols-4 gap-2.5">
+          <div className="flex gap-3 -mx-4 px-4 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1">
             {COIN_PACKS.map((p) => (
-              <div key={p.id} className={`relative rounded-2xl p-2.5 ${p.best ? "border-2 border-violet-500 bg-violet-50/30" : "border border-slate-100 bg-white"}`}>
+              <div
+                key={p.id}
+                className={`relative snap-start flex-shrink-0 rounded-2xl p-3.5 ${p.best ? "border-2 border-violet-500 bg-violet-50/40" : "border border-slate-100 bg-white"}`}
+                style={{ width: "calc((100% - 12px) / 2)" }}
+              >
                 {p.best && (
                   <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-violet-500 text-white text-[9px] font-extrabold whitespace-nowrap shadow-sm">
                     🔥 Best Value
                   </div>
                 )}
-                <div className="flex flex-col items-center text-center pt-1.5">
-                  <div className="text-3xl leading-none">{p.id === "pack_2500" ? "🎁" : "🪙"}</div>
-                  <p className="font-extrabold text-lg leading-none mt-1.5 text-slate-900 tabular-nums">{p.coins.toLocaleString()}</p>
+                <div className="flex flex-col items-center text-center pt-1">
+                  <div className="text-[34px] leading-none">{p.id === "pack_2500" ? "🎁" : "🪙"}</div>
+                  <p className="font-extrabold text-xl leading-none mt-2 text-slate-900 tabular-nums">{p.coins.toLocaleString()}</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">Coins</p>
-                  {p.bonus && <p className="text-[9px] text-emerald-600 font-extrabold mt-0.5">{p.bonus}</p>}
+                  {p.bonus && <p className="text-[9px] text-emerald-600 font-extrabold mt-0.5 truncate max-w-full">{p.bonus}</p>}
                   <button
                     onClick={() => buyPack(p.id)}
                     disabled={buying === p.id || verifyingRef !== null}
-                    className="mt-2 w-full rounded-xl bg-violet-50 text-violet-700 font-extrabold text-[11px] py-2 tap-scale inline-flex items-center justify-center gap-1 disabled:opacity-60"
+                    className="mt-2.5 w-full rounded-xl bg-violet-50 text-violet-700 font-extrabold text-[12px] py-2 tap-scale inline-flex items-center justify-center gap-1 disabled:opacity-60"
                   >
                     {buying === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : formatPrice(p.prices[ccy], ccy)}
                   </button>
@@ -297,51 +301,78 @@ const WalletPage = () => {
         </div>
       </div>
 
-      {/* TWO-COLUMN: EARN + RECENT TX */}
-      <div className="px-5 mt-4 grid grid-cols-2 gap-3">
-        {/* Earn Coins */}
-        <div className="rounded-3xl bg-white border border-slate-100 shadow-sm p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-extrabold text-[14px] text-slate-900">Earn Coins</h2>
+      {/* EARN COINS — full width, above transactions */}
+      <div className="px-5 mt-4">
+        <div className="rounded-3xl bg-white border border-slate-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-extrabold text-[15px] text-slate-900">Earn Coins</h2>
             <button onClick={() => navigate("/missions")} className="text-[11px] font-bold text-violet-600">See All</button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <EarnRow icon="📅" iconBg="bg-violet-100" title="Daily Login" sub="Login daily to keep your streak" amount={5} cta="Claim" ctaCls="bg-violet-100 text-violet-700" onClick={() => navigate("/missions")} />
             <EarnRow icon="🔥" iconBg="bg-orange-100" title="3 Day Streak" sub="Login for 3 consecutive days" amount={15} cta="2/3" ctaCls="bg-violet-50 text-violet-700" onClick={() => navigate("/missions")} />
             <EarnRow icon="👥" iconBg="bg-blue-100" title="Invite a Friend" sub="Invite friend and get rewards" amount={50} cta="Invite" ctaCls="bg-violet-50 text-violet-700" onClick={() => toast({ title: "Coming soon" })} />
             <EarnRow icon="📝" iconBg="bg-amber-100" title="Complete a Test" sub="Complete any test or quiz" amount={10} cta="Start" ctaCls="bg-violet-50 text-violet-700" onClick={() => navigate("/create-test")} />
           </div>
         </div>
+      </div>
 
-        {/* Recent Transactions */}
-        <div id="history" className="rounded-3xl bg-white border border-slate-100 shadow-sm p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-extrabold text-[14px] text-slate-900">Recent Transactions</h2>
-            <button className="text-[11px] font-bold text-violet-600">See All</button>
+      {/* RECENT TRANSACTIONS — full width, below */}
+      <div id="history" className="px-5 mt-4">
+        <div className="rounded-3xl bg-white border border-slate-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-extrabold text-[15px] text-slate-900">Recent Transactions</h2>
+            {txs.length > 0 && (
+              <button
+                onClick={async () => {
+                  if (!confirm("Clear all transaction history? This cannot be undone.")) return;
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return;
+                  const { error } = await supabase.from("coin_transactions").delete().eq("user_id", user.id);
+                  if (error) { toast({ title: "Could not clear", description: error.message, variant: "destructive" }); return; }
+                  setTxs([]);
+                  toast({ title: "History cleared" });
+                }}
+                className="text-[11px] font-bold text-rose-600 inline-flex items-center gap-1"
+              >
+                Clear All
+              </button>
+            )}
           </div>
           {txs.length === 0 ? (
-            <div className="py-6 text-center text-[11px] text-slate-400">
-              <WalletIcon className="h-7 w-7 mx-auto mb-2 text-slate-300" />
+            <div className="py-8 text-center text-[12px] text-slate-400">
+              <WalletIcon className="h-8 w-8 mx-auto mb-2 text-slate-300" />
               No transactions yet
             </div>
           ) : (
             <div className="space-y-2.5">
-              {txs.slice(0, 4).map((t) => {
+              {txs.map((t) => {
                 const positive = t.amount > 0;
                 return (
-                  <div key={t.id} className="flex items-center gap-2.5">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${positive ? "bg-emerald-100" : "bg-rose-100"}`}>
+                  <div key={t.id} className="flex items-center gap-3 group">
+                    <div className={`h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 ${positive ? "bg-emerald-100" : "bg-rose-100"}`}>
                       {positive ? <ArrowDownLeft className="h-4 w-4 text-emerald-600" /> : <ArrowUpRight className="h-4 w-4 text-rose-600" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-[12px] text-slate-900 truncate">{reasonLabel(t.reason)}</p>
-                      <p className="text-[9px] text-slate-500">
-                        {new Date(t.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · {new Date(t.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {new Date(t.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {new Date(t.created_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
                     <p className={`font-extrabold text-[13px] tabular-nums inline-flex items-center gap-0.5 ${positive ? "text-emerald-600" : "text-rose-600"}`}>
                       {positive ? "+" : ""}{t.amount}<span className="text-base">🪙</span>
                     </p>
+                    <button
+                      onClick={async () => {
+                        const { error } = await supabase.from("coin_transactions").delete().eq("id", t.id);
+                        if (error) { toast({ title: "Could not delete", description: error.message, variant: "destructive" }); return; }
+                        setTxs((cur) => cur.filter((x) => x.id !== t.id));
+                      }}
+                      className="h-7 w-7 rounded-lg hover:bg-rose-50 flex items-center justify-center text-slate-400 hover:text-rose-600 tap-scale flex-shrink-0"
+                      aria-label="Delete transaction"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 );
               })}
