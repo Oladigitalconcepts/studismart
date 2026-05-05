@@ -78,9 +78,15 @@ export async function claimMission(def: MissionDef) {
     .eq("user_id", user.id).eq("mission_key", def.key).eq("day", day)
     .maybeSingle();
   if (!row || row.claimed_at || row.count < def.target) return;
-  await supabase.from("mission_progress")
+  // Atomic guard: only update if still unclaimed
+  const { data: updated, error } = await supabase
+    .from("mission_progress")
     .update({ claimed_at: new Date().toISOString() })
-    .eq("id", row.id);
+    .eq("id", row.id)
+    .is("claimed_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error || !updated) return; // already claimed by a concurrent request
   await earn(def.reward, `mission_${def.key}`);
 }
 
