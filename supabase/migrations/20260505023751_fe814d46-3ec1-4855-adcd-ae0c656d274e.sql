@@ -1,0 +1,1 @@
+CREATE POLICY "own tx delete" ON public.coin_transactions FOR DELETE USING (auth.uid() = user_id);

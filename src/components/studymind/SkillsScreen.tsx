@@ -123,26 +123,26 @@ export const SkillsScreen = () => {
         </div>
 
         {/* Progress card */}
-        <div className="relative mt-5 rounded-2xl bg-white/[0.07] backdrop-blur-sm border border-white/10 p-4 flex items-center gap-4">
+        <div className="relative mt-5 rounded-2xl bg-white/[0.07] backdrop-blur-sm border border-white/10 p-3.5 flex items-center gap-3">
           <CircularProgress percent={overallProgress} />
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-[15px] leading-tight">Keep going, {profileName.split(" ")[0]}</p>
-            <p className="text-[11px] text-white/70 mt-1 leading-snug">
-              You're doing great. Complete a lesson today and earn <span className="text-amber-300 font-bold">5 coins</span>
+            <p className="font-bold text-[13px] leading-tight truncate">Keep going, {profileName.split(" ")[0]}</p>
+            <p className="text-[10px] text-white/70 mt-1 leading-snug line-clamp-2">
+              Complete a lesson today and earn <span className="text-amber-300 font-bold">5 coins</span>
             </p>
           </div>
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-2xl">🔥</span>
-            <p className="font-extrabold text-xl leading-none">{streakDays || 7}</p>
-            <p className="text-[9px] text-white/70">Day Streak</p>
+          <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+            <span className="text-lg leading-none">🔥</span>
+            <p className="font-extrabold text-base leading-none">{streakDays || 0}</p>
+            <p className="text-[8px] text-white/70 leading-none">Day Streak</p>
           </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="relative h-10 w-10 flex items-center justify-center">
-              <div className="absolute inset-0 bg-violet-500 rounded-[10px] rotate-45" />
-              <Zap className="relative h-5 w-5 text-white" fill="white" />
+          <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+            <div className="relative h-8 w-8 flex items-center justify-center">
+              <div className="absolute inset-0 bg-violet-500 rounded-[8px] rotate-45" />
+              <Zap className="relative h-4 w-4 text-white" fill="white" />
             </div>
-            <p className="text-[9px] text-white/80 font-semibold">Skill Rookie</p>
-            <p className="text-[8px] text-white/60 -mt-0.5">Next at 80%</p>
+            <p className="text-[8px] text-white/80 font-semibold leading-none mt-0.5">Skill Rookie</p>
+            <p className="text-[7px] text-white/60 leading-none">Next at 80%</p>
           </div>
         </div>
       </div>
@@ -183,13 +183,13 @@ export const SkillsScreen = () => {
                     </div>
                     <p className="text-[10px] text-slate-700 font-bold mt-1 text-right">{pct}%</p>
                   </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="inline-flex items-center gap-0.5 text-[11px] font-bold text-slate-700">
+                  <div className="mt-2 flex items-center justify-between gap-1">
+                    <div className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-700">
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> {s.rating}
                     </div>
-                    <button onClick={() => handleStart(s)} className={`text-[11px] font-bold rounded-full px-3.5 py-1.5 text-white tap-scale ${t.btn}`}>
-                      {us ? "Continue" : "Start"}
-                    </button>
+                    <span className="text-[9px] font-extrabold rounded-full px-2 py-1 bg-slate-200 text-slate-600">
+                      Coming Soon
+                    </span>
                   </div>
                 </div>
               );
@@ -223,11 +223,11 @@ export const SkillsScreen = () => {
                 <div className="inline-flex items-center gap-1 bg-white rounded-md px-1.5 py-0.5"><BarChart3 className="h-3 w-3" /> {recommended.level}</div>
               </div>
             </div>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <p className="text-[11px] text-slate-600 inline-flex items-center gap-1">🪙 Unlock for <span className="font-bold">{recommended.cost_coins} coins</span></p>
-              <button onClick={() => handleStart(recommended)} className="gradient-primary text-white text-xs font-bold rounded-xl px-5 py-2.5 tap-scale shadow-md">
-                Start Learning
-              </button>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-[11px] text-slate-600 inline-flex items-center gap-1 truncate">🪙 Unlock for <span className="font-bold">{recommended.cost_coins} coins</span></p>
+              <span className="bg-slate-200 text-slate-600 text-[11px] font-extrabold rounded-xl px-4 py-2 flex-shrink-0">
+                Coming Soon
+              </span>
             </div>
           </div>
         )}
@@ -266,8 +266,8 @@ export const SkillsScreen = () => {
                   <p className="text-[10px] text-slate-500 mt-1">Lesson {completed} of {target.lessons_count}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                  <span className="bg-violet-100 text-violet-700 text-[11px] font-bold px-3 py-1.5 rounded-full">▶ Continue</span>
-                  <span className="text-[10px] text-slate-500 inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> 15 min left</span>
+                  <span className="bg-slate-200 text-slate-600 text-[10px] font-extrabold px-2.5 py-1.5 rounded-full whitespace-nowrap">Coming Soon</span>
+                  <span className="text-[10px] text-slate-500 inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> Soon</span>
                 </div>
               </button>
             );
@@ -338,12 +338,12 @@ const CircularProgress = ({ percent }: { percent: number }) => {
 };
 
 const StatTile = ({ color, iconBg, icon: Icon, value, label, sub }: { color: string; iconBg: string; icon: any; value: number | string; label: string; sub: string }) => (
-  <div className={`rounded-2xl ${color} p-2.5 flex flex-col items-start gap-1.5`}>
+  <div className={`rounded-2xl ${color} p-2.5 flex flex-col items-start gap-1 min-w-0`}>
     <div className={`h-8 w-8 rounded-xl ${iconBg} flex items-center justify-center shadow-sm`}>
       <Icon className="h-4 w-4 text-white" />
     </div>
-    <p className="font-extrabold text-lg leading-none text-slate-900">{value}</p>
-    <p className="text-[9px] font-bold leading-tight text-slate-700">{label}</p>
-    <p className="text-[8px] text-slate-500 leading-tight -mt-0.5">{sub}</p>
+    <p className="font-extrabold text-base leading-none text-slate-900 tabular-nums">{value}</p>
+    <p className="text-[9px] font-bold leading-tight text-slate-700 break-words">{label}</p>
+    <p className="text-[8px] text-slate-500 leading-tight break-words">{sub}</p>
   </div>
 );
