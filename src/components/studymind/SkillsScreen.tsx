@@ -266,8 +266,8 @@ export const SkillsScreen = () => {
                   <p className="text-[10px] text-slate-500 mt-1">Lesson {completed} of {target.lessons_count}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                  <span className="bg-violet-100 text-violet-700 text-[11px] font-bold px-3 py-1.5 rounded-full">▶ Continue</span>
-                  <span className="text-[10px] text-slate-500 inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> 15 min left</span>
+                  <span className="bg-slate-200 text-slate-600 text-[10px] font-extrabold px-2.5 py-1.5 rounded-full whitespace-nowrap">Coming Soon</span>
+                  <span className="text-[10px] text-slate-500 inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> Soon</span>
                 </div>
               </button>
             );
