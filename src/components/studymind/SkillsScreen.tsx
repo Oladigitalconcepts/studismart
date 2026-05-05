@@ -223,11 +223,11 @@ export const SkillsScreen = () => {
                 <div className="inline-flex items-center gap-1 bg-white rounded-md px-1.5 py-0.5"><BarChart3 className="h-3 w-3" /> {recommended.level}</div>
               </div>
             </div>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <p className="text-[11px] text-slate-600 inline-flex items-center gap-1">🪙 Unlock for <span className="font-bold">{recommended.cost_coins} coins</span></p>
-              <button onClick={() => handleStart(recommended)} className="gradient-primary text-white text-xs font-bold rounded-xl px-5 py-2.5 tap-scale shadow-md">
-                Start Learning
-              </button>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-[11px] text-slate-600 inline-flex items-center gap-1 truncate">🪙 Unlock for <span className="font-bold">{recommended.cost_coins} coins</span></p>
+              <span className="bg-slate-200 text-slate-600 text-[11px] font-extrabold rounded-xl px-4 py-2 flex-shrink-0">
+                Coming Soon
+              </span>
             </div>
           </div>
         )}
