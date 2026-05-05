@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bell, Wallet as WalletIcon, Crown, Gift, ShoppingCart, History, ArrowDownLeft, ArrowUpRight, Coins, Plus, Sparkles, FileText, UserPlus, Calendar, Flame, Bot, Loader2 } from "lucide-react";
+import { ArrowLeft, Bell, Wallet as WalletIcon, Crown, Gift, ShoppingCart, History, ArrowDownLeft, ArrowUpRight, Coins, Plus, Sparkles, FileText, UserPlus, Calendar, Flame, Bot, Loader2, CheckCircle2, XCircle, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { useWallet } from "@/hooks/useWallet";
@@ -33,6 +33,8 @@ const WalletPage = () => {
   const [txs, setTxs] = useState<Tx[]>([]);
   const [buying, setBuying] = useState<string | null>(null);
   const [verifyingRef, setVerifyingRef] = useState<string | null>(null);
+  const [verifyState, setVerifyState] = useState<"verifying" | "success" | "failed" | null>(null);
+  const [verifyMsg, setVerifyMsg] = useState<string>("");
   const ccy = useMemo(() => detectCurrency(), []);
   const [params, setParams] = useSearchParams();
 
@@ -56,7 +58,13 @@ const WalletPage = () => {
     const reference = params.get("reference") || params.get("trxref");
     if (!reference) return;
     setVerifyingRef(reference);
+    setVerifyState("verifying");
+    setVerifyMsg("Hang tight while we confirm your payment with Paystack.");
     let attempts = 0;
+    const clearUrl = () => {
+      params.delete("reference"); params.delete("trxref");
+      setParams(params, { replace: true });
+    };
     const timer = setInterval(async () => {
       attempts++;
       const { data } = await supabase
@@ -66,16 +74,24 @@ const WalletPage = () => {
         .maybeSingle();
       if (data?.status === "credited") {
         clearInterval(timer);
-        setVerifyingRef(null);
-        toast({ title: "Payment confirmed", description: `+${data.coins.toLocaleString()} coins added to your wallet` });
+        setVerifyState("success");
+        setVerifyMsg(`+${data.coins.toLocaleString()} coins added to your wallet`);
+        toast({ title: "Coins added", description: `+${data.coins.toLocaleString()} coins credited` });
         refresh();
         window.dispatchEvent(new CustomEvent("wallet-updated"));
-        params.delete("reference"); params.delete("trxref");
-        setParams(params, { replace: true });
+        clearUrl();
+        setTimeout(() => { setVerifyingRef(null); setVerifyState(null); }, 2200);
+      } else if (data?.status === "failed") {
+        clearInterval(timer);
+        setVerifyState("failed");
+        setVerifyMsg("Payment failed. No coins were charged.");
+        toast({ title: "Payment failed", description: "No coins were credited.", variant: "destructive" });
+        clearUrl();
       } else if (attempts >= 20) {
         clearInterval(timer);
-        setVerifyingRef(null);
-        toast({ title: "Still processing", description: "Coins will appear once Paystack confirms the payment.", });
+        setVerifyState("failed");
+        setVerifyMsg("We couldn't confirm your payment in time. Coins will appear once Paystack confirms.");
+        clearUrl();
       }
     }, 1500);
     return () => clearInterval(timer);
@@ -107,6 +123,46 @@ const WalletPage = () => {
   return (
     <div className="animate-fade-in pb-6 bg-slate-50 min-h-screen">
       <StatusBar />
+
+      {/* PAYMENT VERIFICATION BANNER */}
+      {verifyState && (
+        <div className="px-5 pt-3">
+          <div
+            role="status"
+            aria-live="polite"
+            className={`rounded-2xl p-3.5 flex items-center gap-3 shadow-sm border ${
+              verifyState === "verifying"
+                ? "bg-violet-50 border-violet-200 text-violet-900"
+                : verifyState === "success"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                : "bg-red-50 border-red-200 text-red-900"
+            }`}
+          >
+            <div className="h-9 w-9 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0">
+              {verifyState === "verifying" && <Loader2 className="h-5 w-5 animate-spin text-violet-600" />}
+              {verifyState === "success" && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+              {verifyState === "failed" && <XCircle className="h-5 w-5 text-red-600" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-extrabold leading-tight">
+                {verifyState === "verifying" && "Verifying payment…"}
+                {verifyState === "success" && "Coins added"}
+                {verifyState === "failed" && "Payment failed"}
+              </p>
+              <p className="text-[11px] opacity-80 truncate">{verifyMsg}</p>
+            </div>
+            {verifyState !== "verifying" && (
+              <button
+                onClick={() => { setVerifyState(null); setVerifyingRef(null); }}
+                className="h-7 w-7 rounded-lg hover:bg-white/60 flex items-center justify-center tap-scale"
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* TOP BAR */}
       <div className="px-5 pt-4 pb-3 flex items-center justify-between bg-slate-50">
