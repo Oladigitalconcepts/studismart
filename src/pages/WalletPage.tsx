@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Bell, Wallet as WalletIcon, Crown, Gift, ShoppingCart, History, ArrowDownLeft, ArrowUpRight, Coins, Plus, Sparkles, FileText, UserPlus, Calendar, Flame, Bot, Loader2, CheckCircle2, XCircle, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
