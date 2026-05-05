@@ -58,7 +58,13 @@ const WalletPage = () => {
     const reference = params.get("reference") || params.get("trxref");
     if (!reference) return;
     setVerifyingRef(reference);
+    setVerifyState("verifying");
+    setVerifyMsg("Hang tight while we confirm your payment with Paystack.");
     let attempts = 0;
+    const clearUrl = () => {
+      params.delete("reference"); params.delete("trxref");
+      setParams(params, { replace: true });
+    };
     const timer = setInterval(async () => {
       attempts++;
       const { data } = await supabase
@@ -68,16 +74,24 @@ const WalletPage = () => {
         .maybeSingle();
       if (data?.status === "credited") {
         clearInterval(timer);
-        setVerifyingRef(null);
-        toast({ title: "Payment confirmed", description: `+${data.coins.toLocaleString()} coins added to your wallet` });
+        setVerifyState("success");
+        setVerifyMsg(`+${data.coins.toLocaleString()} coins added to your wallet`);
+        toast({ title: "Coins added", description: `+${data.coins.toLocaleString()} coins credited` });
         refresh();
         window.dispatchEvent(new CustomEvent("wallet-updated"));
-        params.delete("reference"); params.delete("trxref");
-        setParams(params, { replace: true });
+        clearUrl();
+        setTimeout(() => { setVerifyingRef(null); setVerifyState(null); }, 2200);
+      } else if (data?.status === "failed") {
+        clearInterval(timer);
+        setVerifyState("failed");
+        setVerifyMsg("Payment failed. No coins were charged.");
+        toast({ title: "Payment failed", description: "No coins were credited.", variant: "destructive" });
+        clearUrl();
       } else if (attempts >= 20) {
         clearInterval(timer);
-        setVerifyingRef(null);
-        toast({ title: "Still processing", description: "Coins will appear once Paystack confirms the payment.", });
+        setVerifyState("failed");
+        setVerifyMsg("We couldn't confirm your payment in time. Coins will appear once Paystack confirms.");
+        clearUrl();
       }
     }, 1500);
     return () => clearInterval(timer);
