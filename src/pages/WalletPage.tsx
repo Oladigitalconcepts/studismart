@@ -124,6 +124,46 @@ const WalletPage = () => {
     <div className="animate-fade-in pb-6 bg-slate-50 min-h-screen">
       <StatusBar />
 
+      {/* PAYMENT VERIFICATION BANNER */}
+      {verifyState && (
+        <div className="px-5 pt-3">
+          <div
+            role="status"
+            aria-live="polite"
+            className={`rounded-2xl p-3.5 flex items-center gap-3 shadow-sm border ${
+              verifyState === "verifying"
+                ? "bg-violet-50 border-violet-200 text-violet-900"
+                : verifyState === "success"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                : "bg-red-50 border-red-200 text-red-900"
+            }`}
+          >
+            <div className="h-9 w-9 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0">
+              {verifyState === "verifying" && <Loader2 className="h-5 w-5 animate-spin text-violet-600" />}
+              {verifyState === "success" && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+              {verifyState === "failed" && <XCircle className="h-5 w-5 text-red-600" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-extrabold leading-tight">
+                {verifyState === "verifying" && "Verifying payment…"}
+                {verifyState === "success" && "Coins added"}
+                {verifyState === "failed" && "Payment failed"}
+              </p>
+              <p className="text-[11px] opacity-80 truncate">{verifyMsg}</p>
+            </div>
+            {verifyState !== "verifying" && (
+              <button
+                onClick={() => { setVerifyState(null); setVerifyingRef(null); }}
+                className="h-7 w-7 rounded-lg hover:bg-white/60 flex items-center justify-center tap-scale"
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* TOP BAR */}
       <div className="px-5 pt-4 pb-3 flex items-center justify-between bg-slate-50">
         <div className="flex items-center gap-3">
