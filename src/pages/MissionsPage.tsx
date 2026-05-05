@@ -45,7 +45,7 @@ const MissionsPage = () => {
     return () => window.removeEventListener("wallet-updated", onUpd);
   }, []);
 
-  const streakDays = wallet?.streak_days ?? 3;
+  const streakDays = wallet?.streak_days ?? 0;
   const completedCount = useMemo(() => DAILY_MISSIONS.filter((m) => progress[m.key]?.claimed_at).length, [progress]);
 
   const handleClaim = async (m: MissionDef) => {
