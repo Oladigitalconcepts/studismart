@@ -162,7 +162,7 @@ export const SkillsScreen = () => {
               const Icon = ICON_MAP[s.icon] ?? Sparkles;
               const t = CARD_THEME[s.color] ?? CARD_THEME.primary;
               const us = userSkills[s.id];
-              const pct = us ? Math.round((us.completed_lessons / Math.max(s.lessons_count, 1)) * 100) : Math.round(20 + Math.random() * 60);
+              const pct = us ? Math.round((us.completed_lessons / Math.max(s.lessons_count, 1)) * 100) : 0;
               return (
                 <div key={s.id} className={`min-w-[180px] max-w-[180px] rounded-3xl ${t.card} p-3.5 snap-start flex flex-col`}>
                   <div className="flex items-start justify-between">
