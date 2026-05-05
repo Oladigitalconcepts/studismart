@@ -33,6 +33,8 @@ const WalletPage = () => {
   const [txs, setTxs] = useState<Tx[]>([]);
   const [buying, setBuying] = useState<string | null>(null);
   const [verifyingRef, setVerifyingRef] = useState<string | null>(null);
+  const [verifyState, setVerifyState] = useState<"verifying" | "success" | "failed" | null>(null);
+  const [verifyMsg, setVerifyMsg] = useState<string>("");
   const ccy = useMemo(() => detectCurrency(), []);
   const [params, setParams] = useSearchParams();
 
