@@ -132,6 +132,12 @@
   .gradient-card { background: var(--gradient-card); }
   .gradient-success { background: var(--gradient-success); }
   .gradient-warm { background: var(--gradient-warm); }
+  .gradient-night {
+    background:
+      radial-gradient(120% 80% at 80% 0%, hsl(265 70% 30% / 0.7), transparent 60%),
+      radial-gradient(100% 70% at 0% 100%, hsl(245 70% 25% / 0.8), transparent 60%),
+      linear-gradient(160deg, hsl(248 55% 12%) 0%, hsl(258 55% 16%) 55%, hsl(268 55% 20%) 100%);
+  }
   .text-gradient {
     background: var(--gradient-primary);
     -webkit-background-clip: text;
