@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Calendar, Flame, FileText, Bot, StickyNote, Share2, UserPlus, Trophy, ShieldCheck, Coins, Play, Gift, Lock, CheckCircle2, Info, Star } from "lucide-react";
+import { ArrowLeft, Calendar, Flame, FileText, Bot, StickyNote, Share2, UserPlus, Trophy, ShieldCheck, Coins, Gift, Lock, CheckCircle2, Info, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { CoinBalancePill } from "@/components/studymind/CoinBalancePill";
