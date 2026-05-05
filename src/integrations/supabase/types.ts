@@ -49,6 +49,51 @@ export type Database = {
           },
         ]
       }
+      coin_purchases: {
+        Row: {
+          amount_minor: number
+          coins: number
+          created_at: string
+          credited_at: string | null
+          currency: string
+          id: string
+          pack_id: string
+          provider: string
+          raw: Json
+          reference: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount_minor: number
+          coins: number
+          created_at?: string
+          credited_at?: string | null
+          currency: string
+          id?: string
+          pack_id: string
+          provider?: string
+          raw?: Json
+          reference: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount_minor?: number
+          coins?: number
+          created_at?: string
+          credited_at?: string | null
+          currency?: string
+          id?: string
+          pack_id?: string
+          provider?: string
+          raw?: Json
+          reference?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coin_transactions: {
         Row: {
           amount: number
@@ -715,6 +760,25 @@ export type Database = {
     Functions: {
       adjust_coins: {
         Args: { _amount: number; _kind: string; _meta?: Json; _reason: string }
+        Returns: {
+          coins: number
+          created_at: string
+          last_login_date: string | null
+          level: number
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      credit_purchase: {
+        Args: { _reference: string }
         Returns: {
           coins: number
           created_at: string
