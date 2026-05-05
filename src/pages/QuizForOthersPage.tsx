@@ -66,6 +66,7 @@ const QuizForOthersPage = () => {
       setShareUrl(url);
       track("shared_quiz_created", { token, num_questions: subset.length });
       track("quiz_created", { token, num_questions: subset.length, mode: "shared" });
+      bumpMission("share_quiz").catch(() => {});
       setStep("share");
     } catch (e: any) {
       toast({ title: e?.message ?? "Could not create link", variant: "destructive" });
