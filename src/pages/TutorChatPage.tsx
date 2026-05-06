@@ -249,10 +249,10 @@ export default function TutorChatPage() {
         )}
       </div>
 
-      {/* Fixed input dock (sits above bottom nav) */}
+      {/* Fixed input dock (sits above bottom nav, respects safe-area) */}
       <div
         className="fixed left-1/2 -translate-x-1/2 w-full max-w-md bg-background/95 backdrop-blur-xl border-t border-border z-40"
-        style={{ bottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}
+        style={{ bottom: "calc(var(--bottom-nav-h, 64px) + 4px)" }}
       >
         {/* Suggestions only after an AI reply */}
         {lastIsAssistant && !sending && (
