@@ -57,14 +57,24 @@ const MissionsPage = () => {
   const streakDays = wallet?.streak_days ?? 0;
   const completedCount = useMemo(() => DAILY_MISSIONS.filter((m) => progress[m.key]?.claimed_at).length, [progress]);
 
+  const markClaimedLocally = (key: string) => {
+    setProgress((prev) => ({
+      ...prev,
+      [key]: { ...(prev[key] ?? { mission_key: key, count: 0, claimed_at: null }), claimed_at: new Date().toISOString() },
+    }));
+  };
+
   const handleDailyCheckIn = async () => {
     if (checkingIn || progress.daily_login?.claimed_at) return;
     setCheckingIn(true);
+    markClaimedLocally("daily_login"); // optimistic — instantly disables button
     try {
       await triggerDailyLogin();
       toast({ title: "+5 coins", description: "Daily check-in complete." });
       await load();
     } catch (e: any) {
+      // rollback optimistic state
+      await load();
       toast({ title: "Could not check in", description: e?.message ?? "Try again", variant: "destructive" });
     } finally {
       setCheckingIn(false);
@@ -73,10 +83,12 @@ const MissionsPage = () => {
 
   const handleClaim = async (m: MissionDef) => {
     if (claiming || checkingIn) return;
+    if (progress[m.key]?.claimed_at) return;
     if (m.key === "daily_login") { await handleDailyCheckIn(); return; }
     setClaiming(m.key);
+    markClaimedLocally(m.key);
     try { await claimMission(m); toast({ title: `+${m.reward} coins`, description: `${m.title} claimed!` }); await load(); }
-    catch (e: any) { toast({ title: "Could not claim", description: e?.message ?? "Try again", variant: "destructive" }); }
+    catch (e: any) { await load(); toast({ title: "Could not claim", description: e?.message ?? "Try again", variant: "destructive" }); }
     finally { setClaiming(null); }
   };
 
