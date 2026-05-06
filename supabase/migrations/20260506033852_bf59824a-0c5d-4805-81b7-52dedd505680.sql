@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.spend_coins_for_tutor(UUID, INTEGER, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
