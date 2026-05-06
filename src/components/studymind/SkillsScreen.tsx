@@ -96,10 +96,10 @@ export const SkillsScreen = () => {
 
   return (
     <div className="animate-fade-in pb-6 bg-white">
-      <StatusBar />
+      <StatusBar tone="night" />
 
       {/* DARK HERO */}
-      <div className="relative gradient-night text-white px-5 pt-3 pb-8 overflow-hidden">
+      <div className="relative gradient-night text-white px-5 pt-3 pb-8 overflow-hidden safe-top">
         <div className="absolute -right-16 -top-20 w-72 h-72 bg-violet-500/20 blur-3xl rounded-full" />
         <div className="absolute -left-20 top-20 w-64 h-64 bg-indigo-500/20 blur-3xl rounded-full" />
 

@@ -1,9 +1,11 @@
 import heroStudent from "@/assets/hero-student.png";
 import { Button } from "@/components/ui/button";
 import { GraduationCap } from "lucide-react";
+import { StatusBar } from "@/components/studymind/StatusBar";
 
 export const Splash = ({ onStart }: { onStart: () => void }) => (
-  <div className="min-h-screen flex flex-col items-center justify-between p-8 gradient-hero text-white relative overflow-hidden">
+  <div className="min-h-screen flex flex-col items-center justify-between p-8 gradient-hero text-white relative overflow-hidden safe-top safe-bottom">
+    <StatusBar tone="hero" />
     <div className="absolute inset-0 opacity-30">
       <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-white/20 blur-3xl" />
       <div className="absolute bottom-40 right-10 w-40 h-40 rounded-full bg-primary-glow/40 blur-3xl" />

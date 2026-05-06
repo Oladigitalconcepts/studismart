@@ -87,8 +87,8 @@ const SkillDetailPage = () => {
 
   return (
     <div className="animate-fade-in pb-6">
-      <StatusBar />
-      <div className="relative px-5 pt-4 pb-6 gradient-hero text-white rounded-b-[28px]">
+      <StatusBar tone="hero" />
+      <div className="relative px-5 pt-4 pb-6 gradient-hero text-white rounded-b-[28px] safe-top">
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => navigate(-1)} className="h-9 w-9 rounded-full bg-white/15 flex items-center justify-center backdrop-blur tap-scale">
             <ArrowLeft className="h-4 w-4 text-white" />
