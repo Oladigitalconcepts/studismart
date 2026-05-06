@@ -24,6 +24,7 @@ import SlidesPage from "./pages/SlidesPage";
 import SkillsPage from "./pages/SkillsPage";
 import SkillDetailPage from "./pages/SkillDetailPage";
 import WalletPage from "./pages/WalletPage";
+import WalletSuccessPage from "./pages/WalletSuccessPage";
 import MissionsPage from "./pages/MissionsPage";
 import NotFound from "./pages/NotFound";
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/skills" element={<SkillsPage />} />
             <Route path="/skills/:slug" element={<SkillDetailPage />} />
             <Route path="/wallet" element={<WalletPage />} />
+            <Route path="/wallet/success" element={<WalletSuccessPage />} />
             <Route path="/missions" element={<MissionsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
