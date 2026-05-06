@@ -150,9 +150,9 @@ export const SkillsScreen = () => {
             <h2 className="font-bold text-[17px] text-slate-900">Featured Skills</h2>
             <button className="text-xs font-bold text-violet-600 inline-flex items-center gap-1">View all <ArrowRight className="h-3 w-3" /></button>
           </div>
-          <div className="flex gap-3 -mx-5 px-5 overflow-x-auto no-scrollbar pb-2 snap-x">
-            {loading ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="min-w-[170px] h-[230px] rounded-3xl bg-slate-100 animate-pulse snap-start" />
+          <div className="grid grid-cols-2 gap-3 pb-1">
+            {loading ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-[200px] rounded-3xl bg-slate-100 animate-pulse" />
             )) : skills.map((s) => {
               const Icon = ICON_MAP[s.icon] ?? Sparkles;
               const t = CARD_THEME[s.color] ?? CARD_THEME.primary;
