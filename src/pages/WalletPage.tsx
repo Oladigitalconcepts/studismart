@@ -98,7 +98,7 @@ const WalletPage = () => {
         refresh();
         window.dispatchEvent(new CustomEvent("wallet-updated"));
         clearUrl();
-        setTimeout(() => { setVerifyingRef(null); setVerifyState(null); }, 2200);
+        navigate(`/wallet/success?coins=${data.coins.toLocaleString()}`, { replace: true });
       } else if (data?.status === "failed") {
         clearInterval(timer);
         setVerifyState("failed");
@@ -209,9 +209,9 @@ const WalletPage = () => {
 
           {/* Streak + Buy */}
           <div className="relative flex items-start justify-between">
-            <p className="text-[11px] inline-flex items-center gap-1 font-semibold">
-              🔥 {wallet?.streak_days ?? 3} Day Streak! Keep it going! 🔥
-            </p>
+            <button onClick={() => navigate("/missions")} className="text-[11px] inline-flex items-center gap-1 font-semibold tap-scale text-left">
+              🔥 {wallet?.streak_days ?? 0} Day Streak · Check in
+            </button>
             <button onClick={() => document.getElementById("packs")?.scrollIntoView({ behavior: "smooth" })}
               className="bg-white text-violet-700 font-extrabold text-xs rounded-2xl px-4 py-2 tap-scale inline-flex items-center gap-1.5 shadow-lg">
               <Plus className="h-3.5 w-3.5" strokeWidth={3} /> Buy Coins
@@ -308,7 +308,7 @@ const WalletPage = () => {
             <button onClick={() => navigate("/missions")} className="text-[11px] font-bold text-violet-600">See All</button>
           </div>
           <div className="space-y-2.5">
-            <EarnRow icon="📅" iconBg="bg-violet-100" title="Daily Login" sub="Login daily to keep your streak" amount={5} cta="Claim" ctaCls="bg-violet-100 text-violet-700" onClick={() => navigate("/missions")} />
+            <EarnRow icon="📅" iconBg="bg-violet-100" title="Daily Login" sub="Check in once daily" amount={5} cta="Open" ctaCls="bg-violet-100 text-violet-700" onClick={() => navigate("/missions")} />
             <EarnRow icon="🔥" iconBg="bg-orange-100" title="3 Day Streak" sub="Login for 3 consecutive days" amount={15} cta="2/3" ctaCls="bg-violet-50 text-violet-700" onClick={() => navigate("/missions")} />
             <EarnRow icon="👥" iconBg="bg-blue-100" title="Invite a Friend" sub="Invite friend and get rewards" amount={50} cta="Invite" ctaCls="bg-violet-50 text-violet-700" onClick={() => toast({ title: "Coming soon" })} />
             <EarnRow icon="📝" iconBg="bg-amber-100" title="Complete a Test" sub="Complete any test or quiz" amount={10} cta="Start" ctaCls="bg-violet-50 text-violet-700" onClick={() => navigate("/create-test")} />
