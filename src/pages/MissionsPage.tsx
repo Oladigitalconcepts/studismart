@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Calendar, Flame, FileText, Bot, StickyNote, Share2, UserPlus, Trophy, ShieldCheck, Lock, CheckCircle2, Info, Star } from "lucide-react";
+import { ArrowLeft, Calendar, Flame, FileText, Bot, StickyNote, Share2, UserPlus, Trophy, ShieldCheck, Lock, CheckCircle2, Info, Star, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { CoinBalancePill } from "@/components/studymind/CoinBalancePill";
@@ -57,14 +57,24 @@ const MissionsPage = () => {
   const streakDays = wallet?.streak_days ?? 0;
   const completedCount = useMemo(() => DAILY_MISSIONS.filter((m) => progress[m.key]?.claimed_at).length, [progress]);
 
+  const markClaimedLocally = (key: string) => {
+    setProgress((prev) => ({
+      ...prev,
+      [key]: { ...(prev[key] ?? { mission_key: key, count: 0, claimed_at: null }), claimed_at: new Date().toISOString() },
+    }));
+  };
+
   const handleDailyCheckIn = async () => {
     if (checkingIn || progress.daily_login?.claimed_at) return;
     setCheckingIn(true);
+    markClaimedLocally("daily_login"); // optimistic — instantly disables button
     try {
       await triggerDailyLogin();
       toast({ title: "+5 coins", description: "Daily check-in complete." });
       await load();
     } catch (e: any) {
+      // rollback optimistic state
+      await load();
       toast({ title: "Could not check in", description: e?.message ?? "Try again", variant: "destructive" });
     } finally {
       setCheckingIn(false);
@@ -73,10 +83,12 @@ const MissionsPage = () => {
 
   const handleClaim = async (m: MissionDef) => {
     if (claiming || checkingIn) return;
+    if (progress[m.key]?.claimed_at) return;
     if (m.key === "daily_login") { await handleDailyCheckIn(); return; }
     setClaiming(m.key);
+    markClaimedLocally(m.key);
     try { await claimMission(m); toast({ title: `+${m.reward} coins`, description: `${m.title} claimed!` }); await load(); }
-    catch (e: any) { toast({ title: "Could not claim", description: e?.message ?? "Try again", variant: "destructive" }); }
+    catch (e: any) { await load(); toast({ title: "Could not claim", description: e?.message ?? "Try again", variant: "destructive" }); }
     finally { setClaiming(null); }
   };
 
@@ -181,8 +193,8 @@ const MissionsPage = () => {
                       <CheckCircle2 className="h-3.5 w-3.5" /> Done
                     </span>
                   ) : ready ? (
-                    <button onClick={() => handleClaim(m)} disabled={claiming === m.key || checkingIn} className="text-[11px] font-extrabold rounded-xl px-4 py-2 bg-emerald-500 text-white tap-scale flex-shrink-0 shadow-sm shadow-emerald-500/30 disabled:opacity-60">
-                      {claiming === m.key || (m.key === "daily_login" && checkingIn) ? "…" : m.key === "daily_login" ? "Check In" : "Claim"}
+                    <button onClick={() => handleClaim(m)} disabled={claiming === m.key || checkingIn || claimed} aria-busy={claiming === m.key || (m.key === "daily_login" && checkingIn)} className="text-[11px] font-extrabold rounded-xl px-4 py-2 bg-emerald-500 text-white tap-scale flex-shrink-0 shadow-sm shadow-emerald-500/30 disabled:opacity-60 inline-flex items-center gap-1">
+                      {(claiming === m.key || (m.key === "daily_login" && checkingIn)) ? (<><Loader2 className="h-3 w-3 animate-spin" /> Claiming…</>) : m.key === "daily_login" ? "Check In" : "Claim"}
                     </button>
                   ) : m.target > 1 ? (
                     <span className="text-[11px] font-extrabold rounded-xl px-3.5 py-2 bg-violet-50 text-violet-700 flex-shrink-0">
