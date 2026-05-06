@@ -503,37 +503,64 @@ const ToggleRow = ({ icon: Icon, label, checked, onChange }: { icon: any; label:
   </div>
 );
 
-const HelpScreen = ({ onBack }: { onBack: () => void }) => (
-  <div className="animate-fade-in">
-    <SubHeader title="Help & Support" onBack={onBack} />
-    <div className="px-5">
-      <div className="flex flex-col items-center py-6">
-        <div className="h-24 w-24 rounded-full bg-primary-soft flex items-center justify-center">
-          <HelpCircle className="h-12 w-12 text-primary" />
-        </div>
-        <p className="mt-4 text-lg font-bold">We're here to help!</p>
-        <p className="text-xs text-muted-foreground text-center mt-1 max-w-xs">Find answers or reach out to our support team.</p>
-      </div>
+const HelpScreen = ({ onBack }: { onBack: () => void }) => {
+  const [openBox, setOpenBox] = useState(false);
+  const [message, setMessage] = useState("");
+  const supportEmail = "nexolabsa@gmail.com";
+  const whatsappUrl = "https://wa.me/2349055910583";
+  const sendFeedback = () => {
+    const body = encodeURIComponent(message.trim() || "I have a suggestion/feedback for Studismart.");
+    window.location.href = `mailto:${supportEmail}?subject=Suggestion%20and%20Feedback&body=${body}`;
+  };
 
-      <div className="space-y-2">
-        <Row icon={FileQuestion} label="FAQs" onClick={() => toast({ title: "Coming soon" })} />
-        <Row icon={MessageCircle} label="Contact Support" onClick={() => toast({ title: "Email us at help@studymind.app" })} />
-        <Row icon={AlertCircle} label="Report a Problem" onClick={() => toast({ title: "Coming soon" })} />
-        <Row icon={Sparkles} label="Feedback & Suggestions" onClick={() => toast({ title: "Coming soon" })} />
-      </div>
-
-      <div className="mt-6 rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
-          <Bell className="h-5 w-5 text-primary" />
+  return (
+    <div className="animate-fade-in">
+      <SubHeader title="Help & Support" onBack={onBack} />
+      <div className="px-5">
+        <div className="flex flex-col items-center py-6">
+          <div className="h-24 w-24 rounded-full bg-primary-soft flex items-center justify-center">
+            <HelpCircle className="h-12 w-12 text-primary" />
+          </div>
+          <p className="mt-4 text-lg font-bold">We're here to help!</p>
+          <p className="text-xs text-muted-foreground text-center mt-1 max-w-xs">Reach support by WhatsApp, email, or send feedback.</p>
         </div>
-        <div>
-          <p className="text-sm font-semibold">Response Time</p>
-          <p className="text-xs text-muted-foreground">We typically reply within 24 hours</p>
+
+        <div className="space-y-2">
+          <Row icon={MessageCircle} label="WhatsApp Support" onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")} />
+          <Row icon={Mail} label="Email Support" onClick={() => { window.location.href = `mailto:${supportEmail}`; }} />
+          <Row icon={AlertCircle} label="Report a Problem" onClick={() => setOpenBox(true)} />
+          <Row icon={Sparkles} label="Suggestions & Feedback" onClick={() => setOpenBox(true)} />
+        </div>
+
+        {openBox && (
+          <div className="mt-4 rounded-2xl bg-card border border-border p-4">
+            <p className="text-sm font-semibold">Suggestion / Feedback</p>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="mt-3 min-h-28 w-full rounded-xl border border-border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              placeholder="Type your message here..."
+            />
+            <div className="mt-3 flex gap-2">
+              <button onClick={sendFeedback} className="flex-1 rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-bold tap-scale">Send</button>
+              <button onClick={() => setOpenBox(false)} className="flex-1 rounded-xl bg-secondary text-secondary-foreground py-2.5 text-sm font-bold tap-scale">Cancel</button>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
+            <Bell className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Response Time</p>
+            <p className="text-xs text-muted-foreground">We typically reply within 24 hours</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const passwordSchema = (current: string) =>
   z.object({
