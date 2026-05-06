@@ -362,8 +362,8 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
             color="text-orange-500" bg="bg-orange-500/10" onClick={() => onNavigate("quiz-for-others" as any)}
           />
           <QuickAction
-            icon={Bot} title="AI Tutor" subtitle="Coming soon"
-            color="text-emerald-500" bg="bg-emerald-500/10" onClick={() => comingSoon("AI Tutor")}
+            icon={Bot} title="AI Tutor" subtitle="Ask any subject"
+            color="text-emerald-500" bg="bg-emerald-500/10" onClick={() => window.location.assign("/tutor")}
           />
         </div>
       </div>
