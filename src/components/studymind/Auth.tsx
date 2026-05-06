@@ -7,6 +7,7 @@ import { lovable } from "@/integrations/lovable";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 import { z } from "zod";
+import { StatusBar } from "@/components/studymind/StatusBar";
 
 const schema = z.object({
   email: z.string().trim().email("Enter a valid email").max(255),
@@ -84,7 +85,8 @@ export const Auth = ({ onAuthed }: Props) => {
   };
 
   return (
-    <div className="min-h-screen gradient-hero flex flex-col px-6 py-10 text-white">
+    <div className="min-h-screen gradient-hero flex flex-col px-6 py-10 text-white safe-top safe-bottom">
+      <StatusBar tone="hero" />
       <div className="flex flex-col items-center mt-6">
         <div className="h-14 w-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center shadow-glow">
           <GraduationCap className="h-8 w-8" />

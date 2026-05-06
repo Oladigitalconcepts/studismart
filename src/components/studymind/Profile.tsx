@@ -131,7 +131,7 @@ export const Profile = () => {
 
   return (
     <div className="animate-fade-in">
-      <StatusBar />
+      <StatusBar tone="background" />
 
       <div className="relative mx-5 mt-3 rounded-3xl gradient-hero p-6 text-white shadow-elevated overflow-hidden">
         <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/10 blur-3xl" />
