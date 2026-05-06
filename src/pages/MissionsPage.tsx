@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Calendar, Flame, FileText, Bot, StickyNote, Share2, UserPlus, Trophy, ShieldCheck, Coins, Gift, Lock, CheckCircle2, Info, Star } from "lucide-react";
+import { ArrowLeft, Calendar, Flame, FileText, Bot, StickyNote, Share2, UserPlus, Trophy, ShieldCheck, Lock, CheckCircle2, Info, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { CoinBalancePill } from "@/components/studymind/CoinBalancePill";
 import { useWallet } from "@/hooks/useWallet";
-import { DAILY_MISSIONS, BONUS_MISSIONS, fetchTodayMissions, claimMission, type MissionDef, type MissionRow, triggerDailyLogin } from "@/lib/missions";
+import { DAILY_MISSIONS, BONUS_MISSIONS, fetchTodayMissions, claimMission, nextDailyReset, type MissionDef, type MissionRow, triggerDailyLogin } from "@/lib/missions";
 
 import { toast } from "@/hooks/use-toast";
 
@@ -27,9 +27,10 @@ const MissionsPage = () => {
   const { wallet } = useWallet();
   const [progress, setProgress] = useState<Record<string, MissionRow>>({});
   const [claiming, setClaiming] = useState<string | null>(null);
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [resetLabel, setResetLabel] = useState("");
 
   const load = async () => {
-    await triggerDailyLogin();
     const map = await fetchTodayMissions();
     setProgress(map);
   };
@@ -41,13 +42,40 @@ const MissionsPage = () => {
     return () => window.removeEventListener("wallet-updated", onUpd);
   }, []);
 
+  useEffect(() => {
+    const tick = () => {
+      const ms = Math.max(0, nextDailyReset().getTime() - Date.now());
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      setResetLabel(`${h}h ${m}m`);
+    };
+    tick();
+    const id = window.setInterval(tick, 30000);
+    return () => window.clearInterval(id);
+  }, []);
+
   const streakDays = wallet?.streak_days ?? 0;
   const completedCount = useMemo(() => DAILY_MISSIONS.filter((m) => progress[m.key]?.claimed_at).length, [progress]);
 
+  const handleDailyCheckIn = async () => {
+    if (checkingIn || progress.daily_login?.claimed_at) return;
+    setCheckingIn(true);
+    try {
+      await triggerDailyLogin();
+      toast({ title: "+5 coins", description: "Daily check-in complete." });
+      await load();
+    } catch (e: any) {
+      toast({ title: "Could not check in", description: e?.message ?? "Try again", variant: "destructive" });
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
   const handleClaim = async (m: MissionDef) => {
-    if (claiming) return;
+    if (claiming || checkingIn) return;
+    if (m.key === "daily_login") { await handleDailyCheckIn(); return; }
     setClaiming(m.key);
-    try { await claimMission(m); toast({ title: `+${m.reward} coins`, description: `${m.title} claimed!` }); await load(); window.dispatchEvent(new CustomEvent("wallet-updated")); }
+    try { await claimMission(m); toast({ title: `+${m.reward} coins`, description: `${m.title} claimed!` }); await load(); }
     catch (e: any) { toast({ title: "Could not claim", description: e?.message ?? "Try again", variant: "destructive" }); }
     finally { setClaiming(null); }
   };
@@ -75,11 +103,11 @@ const MissionsPage = () => {
         </div>
 
         {/* Streak card */}
-        <div className="relative mt-5 rounded-2xl bg-white/[0.07] backdrop-blur-sm border border-white/10 p-4">
+        <button type="button" onClick={handleDailyCheckIn} disabled={checkingIn || !!progress.daily_login?.claimed_at} className="relative mt-5 w-full text-left rounded-2xl bg-white/[0.07] backdrop-blur-sm border border-white/10 p-4 tap-scale disabled:tap-scale-none disabled:opacity-95">
           <div className="flex items-start gap-4">
             <div className="flex-1">
-              <p className="font-extrabold text-base inline-flex items-center gap-1.5">🔥 {streakDays} Day Streak</p>
-              <p className="text-[11px] text-white/70 mt-1.5 leading-snug">Keep it up! {Math.max(0, 5 - streakDays)} more days to unlock bonus reward.</p>
+              <p className="font-extrabold text-base inline-flex items-center gap-1.5">🔥 {streakDays || 0} Day Streak</p>
+              <p className="text-[11px] text-white/70 mt-1.5 leading-snug">{progress.daily_login?.claimed_at ? "Checked in today. Come back after 12 AM." : "Tap to check in today and keep your streak alive."}</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="text-3xl">💰</div>
@@ -91,29 +119,25 @@ const MissionsPage = () => {
             </div>
           </div>
           {/* Day pips */}
-          <div className="mt-4 flex items-center justify-between">
-            {[1, 2, 3, 4, 5].map((d, i) => {
+          <div className="mt-4 grid grid-cols-7 gap-1.5">
+            {[1, 2, 3, 4, 5, 6, 7].map((d) => {
               const reached = streakDays >= d;
-              const today = streakDays + 1 === d || (streakDays >= d && d === streakDays);
               const isCurrent = d === streakDays;
               return (
-                <div key={d} className="flex flex-col items-center gap-1.5 relative">
-                  {i < 4 && <div className={`absolute top-5 left-[100%] w-[calc(100%-2px)] h-[2px] ${streakDays > d ? "bg-violet-400" : "bg-white/15"} -z-0`} style={{ width: 'calc(100% + 0px)' }} />}
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center relative z-10 ${
+                <div key={d} className="flex flex-col items-center gap-1.5">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-extrabold ${
                     isCurrent ? "bg-white text-orange-500 ring-2 ring-orange-400 shadow-lg shadow-orange-500/30" :
                     reached ? "bg-violet-500 text-white" :
-                    "bg-white/10 text-white/40"
+                    "bg-white/10 text-white/50"
                   }`}>
-                    {isCurrent ? <Flame className="h-5 w-5 fill-orange-500" /> :
-                     reached ? <CheckCircle2 className="h-5 w-5" /> :
-                     <Gift className="h-4 w-4" />}
+                    {reached ? <CheckCircle2 className="h-4 w-4" /> : d}
                   </div>
-                  <span className={`text-[10px] ${reached || isCurrent ? "text-white font-bold" : "text-white/50"}`}>Day {d}</span>
+                  <span className={`text-[9px] ${reached ? "text-white font-bold" : "text-white/50"}`}>{d}</span>
                 </div>
               );
             })}
           </div>
-        </div>
+        </button>
       </div>
 
       {/* WHITE BODY */}
@@ -122,7 +146,7 @@ const MissionsPage = () => {
           <div className="flex items-center justify-between mb-2">
             <div>
               <h2 className="font-extrabold text-[17px] text-slate-900">Daily Missions</h2>
-              <p className="text-[11px] text-slate-500">Resets in <span className="text-violet-600 font-bold">14h 25m</span></p>
+              <p className="text-[11px] text-slate-500">Resets in <span className="text-violet-600 font-bold">{resetLabel || "soon"}</span></p>
             </div>
             <span className="px-3 py-1.5 rounded-full bg-violet-100 text-violet-700 text-[11px] font-bold inline-flex items-center gap-1.5">
               <Calendar className="h-3 w-3" /> Completed {completedCount}/{DAILY_MISSIONS.length}
@@ -136,8 +160,8 @@ const MissionsPage = () => {
               const t = TILE[m.color] ?? TILE.primary;
               const row = progress[m.key];
               const count = row?.count ?? 0;
-              const ready = count >= m.target && !row?.claimed_at;
               const claimed = !!row?.claimed_at;
+              const ready = (m.key === "daily_login" || count >= m.target) && !claimed;
               return (
                 <div key={m.key} className={`px-3.5 py-3.5 flex items-center gap-3 ${idx > 0 ? "border-t border-slate-50" : ""}`}>
                   <div className={`h-12 w-12 rounded-2xl ${t.tile} flex items-center justify-center flex-shrink-0 shadow-md`}>
@@ -157,8 +181,8 @@ const MissionsPage = () => {
                       <CheckCircle2 className="h-3.5 w-3.5" /> Done
                     </span>
                   ) : ready ? (
-                    <button onClick={() => handleClaim(m)} disabled={claiming === m.key} className="text-[11px] font-extrabold rounded-xl px-4 py-2 bg-emerald-500 text-white tap-scale flex-shrink-0 shadow-sm shadow-emerald-500/30 disabled:opacity-60">
-                      {claiming === m.key ? "…" : "Claim"}
+                    <button onClick={() => handleClaim(m)} disabled={claiming === m.key || checkingIn} className="text-[11px] font-extrabold rounded-xl px-4 py-2 bg-emerald-500 text-white tap-scale flex-shrink-0 shadow-sm shadow-emerald-500/30 disabled:opacity-60">
+                      {claiming === m.key || (m.key === "daily_login" && checkingIn) ? "…" : m.key === "daily_login" ? "Check In" : "Claim"}
                     </button>
                   ) : m.target > 1 ? (
                     <span className="text-[11px] font-extrabold rounded-xl px-3.5 py-2 bg-violet-50 text-violet-700 flex-shrink-0">

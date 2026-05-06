@@ -15,6 +15,8 @@ import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { cacheClearForUser } from "@/lib/offlineCache";
 import { computeStreak, type StreakInfo } from "@/lib/notifications";
+import { useWallet } from "@/hooks/useWallet";
+import { triggerDailyLogin } from "@/lib/missions";
 
 type SubScreen =
   | "main" | "streak" | "achievements" | "settings" | "help" | "logout"
@@ -38,6 +40,7 @@ export const Profile = () => {
   const [stats, setStats] = useState({ packs: 0, attempts: 0, correct: 0, materials: 0 });
   const [streak, setStreak] = useState<StreakInfo>({ current: 0, longest: 0, studiedToday: false });
   const [studiedDays, setStudiedDays] = useState<Set<string>>(new Set());
+  const { wallet, refresh: refreshWallet } = useWallet();
 
   useEffect(() => { applyTheme(dark); }, [dark]);
 
@@ -107,7 +110,7 @@ export const Profile = () => {
     streakLongest: streak.longest,
   }), [stats, streak]);
 
-  if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} streak={streak} studiedDays={studiedDays} />;
+  if (screen === "streak") return <StreakScreen onBack={() => setScreen("main")} streak={streak} studiedDays={studiedDays} walletStreak={wallet?.streak_days ?? 0} lastLoginDate={wallet?.last_login_date ?? null} onCheckedIn={refreshWallet} />;
   if (screen === "achievements") return <AchievementsScreen onBack={() => setScreen("main")} correct={stats.correct} packs={stats.packs} materials={stats.materials} streakCurrent={streak.current} streakLongest={streak.longest} />;
   if (screen === "settings") return <SettingsScreen onBack={() => setScreen("main")} dark={dark} setDark={setDark} onPassword={() => setScreen("password")} onNotifications={() => setScreen("notifications")} onEditProfile={() => setScreen("editprofile")} onEmail={() => setScreen("email")} onLanguage={() => setScreen("language")} onDownloads={() => setScreen("downloads")} />;
   if (screen === "help") return <HelpScreen onBack={() => setScreen("main")} />;
@@ -120,7 +123,7 @@ export const Profile = () => {
   if (screen === "logout") return <LogoutScreen onCancel={() => setScreen("main")} />;
 
   const items = [
-    { label: "Study Streak", value: `${streak.current} day${streak.current === 1 ? "" : "s"}`, icon: Flame, color: "text-orange-500", onClick: () => setScreen("streak") },
+    { label: "Study Streak", value: `${wallet?.streak_days ?? 0} day${(wallet?.streak_days ?? 0) === 1 ? "" : "s"}`, icon: Flame, color: "text-orange-500", onClick: () => setScreen("streak") },
     { label: "Achievements", value: `${badgesEarned} badge${badgesEarned === 1 ? "" : "s"}`, icon: Award, color: "text-amber-500", onClick: () => setScreen("achievements") },
     { label: "Settings", icon: SettingsIcon, color: "text-primary", onClick: () => setScreen("settings") },
     { label: "Help & Support", icon: HelpCircle, color: "text-blue-500", onClick: () => setScreen("help") },
@@ -237,7 +240,23 @@ const badgeDefs = (s: BadgeStats) => [
 const computeEarnedBadges = (s: BadgeStats): number =>
   badgeDefs(s).filter((b) => b.earned).length;
 
-const StreakScreen = ({ onBack, streak, studiedDays }: { onBack: () => void; streak: StreakInfo; studiedDays: Set<string> }) => {
+const StreakScreen = ({ onBack, streak, studiedDays, walletStreak, lastLoginDate, onCheckedIn }: { onBack: () => void; streak: StreakInfo; studiedDays: Set<string>; walletStreak: number; lastLoginDate: string | null; onCheckedIn: () => void }) => {
+  const [checking, setChecking] = useState(false);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const checkedToday = lastLoginDate === todayKey;
+  const checkIn = async () => {
+    if (checking || checkedToday) return;
+    setChecking(true);
+    try {
+      await triggerDailyLogin();
+      await onCheckedIn();
+      toast({ title: "+5 coins", description: "Study streak checked in for today." });
+    } catch (e: any) {
+      toast({ title: "Could not check in", description: e?.message ?? "Try again", variant: "destructive" });
+    } finally {
+      setChecking(false);
+    }
+  };
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const today = new Date();
   const jsDay = today.getDay(); // 0 Sun .. 6 Sat
@@ -259,11 +278,14 @@ const StreakScreen = ({ onBack, streak, studiedDays }: { onBack: () => void; str
           <div className="h-28 w-28 rounded-full bg-orange-500/15 flex items-center justify-center">
             <Flame className="h-14 w-14 text-orange-500" />
           </div>
-          <p className="mt-4 text-3xl font-bold">{streak.current} day{streak.current === 1 ? "" : "s"}</p>
+          <p className="mt-4 text-3xl font-bold">{walletStreak} day{walletStreak === 1 ? "" : "s"}</p>
           <p className="text-sm text-muted-foreground">
-            {streak.studiedToday ? "Keep it up! 🔥" : streak.current > 0 ? "Study today to keep your streak!" : "Start your streak today 🚀"}
+            {checkedToday ? "Checked in today! 🔥" : walletStreak > 0 ? "Check in today to keep your streak!" : "Start your streak today 🚀"}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Study every day to keep your streak alive.</p>
+          <p className="text-xs text-muted-foreground mt-1">Resets at 12 AM every day.</p>
+          <button onClick={checkIn} disabled={checking || checkedToday} className="mt-4 rounded-2xl bg-primary text-primary-foreground px-6 py-3 text-sm font-bold tap-scale disabled:opacity-60">
+            {checkedToday ? "Checked In" : checking ? "Checking…" : "Check In Today"}
+          </button>
         </div>
 
         <div className="rounded-2xl bg-card border border-border p-4">
@@ -289,7 +311,7 @@ const StreakScreen = ({ onBack, streak, studiedDays }: { onBack: () => void; str
           <Trophy className="h-6 w-6 text-amber-500" />
           <div className="flex-1">
             <p className="text-sm font-semibold">Longest Streak</p>
-            <p className="text-xs text-muted-foreground">{streak.longest} day{streak.longest === 1 ? "" : "s"}</p>
+            <p className="text-xs text-muted-foreground">{Math.max(streak.longest, walletStreak)} day{Math.max(streak.longest, walletStreak) === 1 ? "" : "s"}</p>
           </div>
         </div>
 
@@ -503,37 +525,64 @@ const ToggleRow = ({ icon: Icon, label, checked, onChange }: { icon: any; label:
   </div>
 );
 
-const HelpScreen = ({ onBack }: { onBack: () => void }) => (
-  <div className="animate-fade-in">
-    <SubHeader title="Help & Support" onBack={onBack} />
-    <div className="px-5">
-      <div className="flex flex-col items-center py-6">
-        <div className="h-24 w-24 rounded-full bg-primary-soft flex items-center justify-center">
-          <HelpCircle className="h-12 w-12 text-primary" />
-        </div>
-        <p className="mt-4 text-lg font-bold">We're here to help!</p>
-        <p className="text-xs text-muted-foreground text-center mt-1 max-w-xs">Find answers or reach out to our support team.</p>
-      </div>
+const HelpScreen = ({ onBack }: { onBack: () => void }) => {
+  const [openBox, setOpenBox] = useState(false);
+  const [message, setMessage] = useState("");
+  const supportEmail = "nexolabsa@gmail.com";
+  const whatsappUrl = "https://wa.me/2349055910583";
+  const sendFeedback = () => {
+    const body = encodeURIComponent(message.trim() || "I have a suggestion/feedback for Studismart.");
+    window.location.href = `mailto:${supportEmail}?subject=Suggestion%20and%20Feedback&body=${body}`;
+  };
 
-      <div className="space-y-2">
-        <Row icon={FileQuestion} label="FAQs" onClick={() => toast({ title: "Coming soon" })} />
-        <Row icon={MessageCircle} label="Contact Support" onClick={() => toast({ title: "Email us at help@studymind.app" })} />
-        <Row icon={AlertCircle} label="Report a Problem" onClick={() => toast({ title: "Coming soon" })} />
-        <Row icon={Sparkles} label="Feedback & Suggestions" onClick={() => toast({ title: "Coming soon" })} />
-      </div>
-
-      <div className="mt-6 rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
-          <Bell className="h-5 w-5 text-primary" />
+  return (
+    <div className="animate-fade-in">
+      <SubHeader title="Help & Support" onBack={onBack} />
+      <div className="px-5">
+        <div className="flex flex-col items-center py-6">
+          <div className="h-24 w-24 rounded-full bg-primary-soft flex items-center justify-center">
+            <HelpCircle className="h-12 w-12 text-primary" />
+          </div>
+          <p className="mt-4 text-lg font-bold">We're here to help!</p>
+          <p className="text-xs text-muted-foreground text-center mt-1 max-w-xs">Reach support by WhatsApp, email, or send feedback.</p>
         </div>
-        <div>
-          <p className="text-sm font-semibold">Response Time</p>
-          <p className="text-xs text-muted-foreground">We typically reply within 24 hours</p>
+
+        <div className="space-y-2">
+          <Row icon={MessageCircle} label="WhatsApp Support" onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")} />
+          <Row icon={Mail} label="Email Support" onClick={() => { window.location.href = `mailto:${supportEmail}`; }} />
+          <Row icon={AlertCircle} label="Report a Problem" onClick={() => setOpenBox(true)} />
+          <Row icon={Sparkles} label="Suggestions & Feedback" onClick={() => setOpenBox(true)} />
+        </div>
+
+        {openBox && (
+          <div className="mt-4 rounded-2xl bg-card border border-border p-4">
+            <p className="text-sm font-semibold">Suggestion / Feedback</p>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="mt-3 min-h-28 w-full rounded-xl border border-border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              placeholder="Type your message here..."
+            />
+            <div className="mt-3 flex gap-2">
+              <button onClick={sendFeedback} className="flex-1 rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-bold tap-scale">Send</button>
+              <button onClick={() => setOpenBox(false)} className="flex-1 rounded-xl bg-secondary text-secondary-foreground py-2.5 text-sm font-bold tap-scale">Cancel</button>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 rounded-2xl bg-card border border-border p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
+            <Bell className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Response Time</p>
+            <p className="text-xs text-muted-foreground">We typically reply within 24 hours</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const passwordSchema = (current: string) =>
   z.object({
