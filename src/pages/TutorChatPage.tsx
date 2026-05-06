@@ -301,7 +301,7 @@ export default function TutorChatPage() {
         <div className="fixed inset-0 z-50 flex" onClick={() => setHistoryOpen(false)}>
           <div className="absolute inset-0 bg-black/40 animate-fade-in" />
           <div
-            className="relative ml-auto w-[85%] max-w-sm h-full bg-background shadow-elevated flex flex-col animate-slide-in-right"
+            className="relative ml-auto w-[85%] max-w-sm h-full bg-background shadow-elevated flex flex-col animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 px-4 h-14 border-b border-border safe-top">
