@@ -223,9 +223,12 @@ export const SkillsScreen = () => {
             </div>
             <div className="mt-3 flex items-center justify-between gap-3">
               <p className="text-[11px] text-slate-600 inline-flex items-center gap-1 truncate">🪙 Unlock for <span className="font-bold">{recommended.cost_coins} coins</span></p>
-              <span className="bg-slate-200 text-slate-600 text-[11px] font-extrabold rounded-xl px-4 py-2 flex-shrink-0">
-                Coming Soon
-              </span>
+              <button
+                onClick={() => handleStart(recommended)}
+                className="bg-amber-500 text-white text-[11px] font-extrabold rounded-xl px-4 py-2 flex-shrink-0 tap-scale"
+              >
+                Start Learning
+              </button>
             </div>
           </div>
         )}
