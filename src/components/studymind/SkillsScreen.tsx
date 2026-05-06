@@ -182,9 +182,12 @@ export const SkillsScreen = () => {
                     <div className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-700">
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> {s.rating}
                     </div>
-                    <span className="text-[9px] font-extrabold rounded-full px-2 py-1 bg-slate-200 text-slate-600">
-                      Coming Soon
-                    </span>
+                    <button
+                      onClick={() => handleStart(s)}
+                      className={`text-[9px] font-extrabold rounded-full px-2 py-1 text-white tap-scale ${t.btn}`}
+                    >
+                      {userSkills[s.id] ? "Continue" : "Start"}
+                    </button>
                   </div>
                 </div>
               );
