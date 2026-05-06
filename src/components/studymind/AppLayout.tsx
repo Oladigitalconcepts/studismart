@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/studymind/BottomNav";
 import { InstallPrompt } from "@/components/studymind/InstallPrompt";
 import { OfflineBanner } from "@/components/studymind/OfflineBanner";
 import { useSession } from "@/hooks/useSession";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { supabase } from "@/integrations/supabase/client";
 import {
   scheduleDailyReminder,
