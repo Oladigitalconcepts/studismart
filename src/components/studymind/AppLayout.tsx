@@ -21,6 +21,7 @@ export const AppLayout = () => {
   const { user, loading } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
+  useSwipeBack(true);
   // (Onboarding is now triggered only after a new signup, not via auto-redirect.)
 
   // Bootstrap notifications on login.
