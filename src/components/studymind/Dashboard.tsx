@@ -4,6 +4,7 @@ import {
   BookOpen, AlertTriangle, Flame, CalendarDays, Trophy, ArrowRight,
   FileCheck2, Users, Bot, Play,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { StatusBar } from "./StatusBar";
 import { CoinBalancePill } from "./CoinBalancePill";
 import { Card } from "@/components/ui/card";
