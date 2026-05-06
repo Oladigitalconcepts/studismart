@@ -47,10 +47,25 @@ const WalletPage = () => {
         .limit(20);
       setTxs((data ?? []) as Tx[]);
     };
+    const verifyAllPending = async () => {
+      const { data: pendings } = await supabase
+        .from("coin_purchases")
+        .select("reference")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      for (const p of pendings ?? []) {
+        try { await supabase.functions.invoke("paystack-verify", { body: { reference: p.reference } }); } catch { /* noop */ }
+      }
+      load();
+      refresh();
+    };
     load();
+    verifyAllPending();
     const onUpd = () => load();
     window.addEventListener("wallet-updated", onUpd);
     return () => window.removeEventListener("wallet-updated", onUpd);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle return from Paystack — poll the purchase row until webhook credits it.
