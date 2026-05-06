@@ -68,40 +68,26 @@ export async function bumpMission(key: string, by = 1) {
   }
 }
 
-export async function claimMission(def: MissionDef) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-  const day = today();
-  const { data: row } = await supabase
-    .from("mission_progress")
-    .select("id, count, claimed_at")
-    .eq("user_id", user.id).eq("mission_key", def.key).eq("day", day)
-    .maybeSingle();
-  if (!row || row.claimed_at || row.count < def.target) return;
-  // Atomic guard: only update if still unclaimed
-  const { data: updated, error } = await supabase
-    .from("mission_progress")
-    .update({ claimed_at: new Date().toISOString() })
-    .eq("id", row.id)
-    .is("claimed_at", null)
-    .select("id")
-    .maybeSingle();
-  if (error || !updated) return; // already claimed by a concurrent request
-  await earn(def.reward, `mission_${def.key}`);
+export async function claimMission(def: MissionDef, idempotencyKey?: string) {
+  const key = idempotencyKey ?? `${def.key}_${today()}`;
+  const { error } = await supabase.rpc("claim_mission", {
+    _mission_key: def.key,
+    _reward: def.reward,
+    _target: def.target,
+    _idempotency_key: key,
+  });
+  if (error) throw error;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("wallet-updated"));
+  }
 }
 
-// Auto-trigger daily login on app open
+// Atomic daily check-in (server-side guard prevents double-credit across devices/taps)
 export async function triggerDailyLogin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  const day = today();
-  const { data: row } = await supabase
-    .from("mission_progress")
-    .select("id")
-    .eq("user_id", user.id).eq("mission_key", "daily_login").eq("day", day)
-    .maybeSingle();
-  if (!row) {
-    await supabase.from("mission_progress")
-      .insert({ user_id: user.id, mission_key: "daily_login", day, count: 1 });
+  await supabase.rpc("daily_check_in", { _reward: 5 });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("wallet-updated"));
   }
 }
