@@ -95,7 +95,7 @@ export const SkillsScreen = () => {
   const streakDays = wallet?.streak_days ?? 0;
 
   return (
-    <div className="animate-fade-in pb-6 bg-white">
+    <div className="animate-fade-in pb-24 bg-white safe-bottom">
       <StatusBar tone="night" />
 
       {/* DARK HERO */}
