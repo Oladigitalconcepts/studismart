@@ -99,6 +99,7 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          idempotency_key: string | null
           kind: string
           meta: Json
           reason: string
@@ -108,6 +109,7 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           kind: string
           meta?: Json
           reason: string
@@ -117,6 +119,7 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           kind?: string
           meta?: Json
           reason?: string
@@ -777,8 +780,51 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      claim_mission: {
+        Args: {
+          _idempotency_key?: string
+          _mission_key: string
+          _reward: number
+          _target: number
+        }
+        Returns: {
+          coins: number
+          created_at: string
+          last_login_date: string | null
+          level: number
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       credit_purchase: {
         Args: { _reference: string }
+        Returns: {
+          coins: number
+          created_at: string
+          last_login_date: string | null
+          level: number
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      daily_check_in: {
+        Args: { _reward?: number }
         Returns: {
           coins: number
           created_at: string
@@ -814,6 +860,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      purchase_status: {
+        Args: { _reference: string }
+        Returns: {
+          coins: number
+          status: string
+        }[]
       }
       weekly_leaderboard: {
         Args: never
