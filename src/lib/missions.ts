@@ -1,6 +1,5 @@
 // Daily missions definitions + tracking helpers.
 import { supabase } from "@/integrations/supabase/client";
-import { earn } from "@/lib/coins";
 
 export interface MissionDef {
   key: string;
@@ -27,7 +26,29 @@ export const BONUS_MISSIONS: MissionDef[] = [
   { key: "weekly_champion", title: "Weekly Champion",    description: "Participate in 5 quizzes",    reward: 200, target: 5, icon: "shield-check", color: "blue" },
 ];
 
-const today = () => new Date().toISOString().slice(0, 10);
+export const today = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const pick = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${pick("year")}-${pick("month")}-${pick("day")}`;
+};
+
+export const nextDailyReset = () => {
+  const now = new Date();
+  const lagos = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Africa/Lagos",
+    hour12: false,
+    year: "numeric", month: "numeric", day: "numeric",
+    hour: "numeric", minute: "numeric", second: "numeric",
+  }).formatToParts(now);
+  const value = (type: string) => Number(lagos.find((p) => p.type === type)?.value ?? 0);
+  const resetInLagosAsUtc = Date.UTC(value("year"), value("month") - 1, value("day") + 1, -1, 0, 0);
+  return new Date(resetInLagosAsUtc);
+};
 
 export interface MissionRow {
   mission_key: string;
@@ -70,24 +91,25 @@ export async function bumpMission(key: string, by = 1) {
 
 export async function claimMission(def: MissionDef, idempotencyKey?: string) {
   const key = idempotencyKey ?? `${def.key}_${today()}`;
-  const { error } = await supabase.rpc("claim_mission", {
+  const { data, error } = await supabase.rpc("claim_mission", {
     _mission_key: def.key,
-    _reward: def.reward,
-    _target: def.target,
     _idempotency_key: key,
   });
   if (error) throw error;
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("wallet-updated"));
+    window.dispatchEvent(new CustomEvent("wallet-updated", { detail: { source: "mission", wallet: data } }));
   }
+  return data;
 }
 
 // Atomic daily check-in (server-side guard prevents double-credit across devices/taps)
 export async function triggerDailyLogin() {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-  await supabase.rpc("daily_check_in", { _reward: 5 });
+  if (!user) return null;
+  const { data, error } = await supabase.rpc("daily_check_in", {});
+  if (error) throw error;
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("wallet-updated"));
+    window.dispatchEvent(new CustomEvent("wallet-updated", { detail: { source: "daily_check_in", wallet: data } }));
   }
+  return data;
 }
