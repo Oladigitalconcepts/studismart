@@ -334,7 +334,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
                   Start Practice <ChevronRight className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => window.location.assign("/tutor")}
+                  onClick={() => navigate("/tutor")}
                   className="flex-1 bg-white/15 backdrop-blur border border-white/30 text-white font-semibold text-sm rounded-xl py-2.5 px-3 tap-scale flex items-center justify-center gap-1.5"
                 >
                   Ask AI Tutor <Bot className="h-4 w-4" />
@@ -365,7 +365,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
           />
           <QuickAction
             icon={Bot} title="AI Tutor" subtitle="Ask any subject"
-            color="text-emerald-500" bg="bg-emerald-500/10" onClick={() => window.location.assign("/tutor")}
+            color="text-emerald-500" bg="bg-emerald-500/10" onClick={() => navigate("/tutor")}
           />
         </div>
       </div>
