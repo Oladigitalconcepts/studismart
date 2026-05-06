@@ -95,7 +95,7 @@ export const SkillsScreen = () => {
   const streakDays = wallet?.streak_days ?? 0;
 
   return (
-    <div className="animate-fade-in pb-6 bg-white">
+    <div className="animate-fade-in pb-24 bg-white safe-bottom">
       <StatusBar tone="night" />
 
       {/* DARK HERO */}
@@ -150,27 +150,27 @@ export const SkillsScreen = () => {
             <h2 className="font-bold text-[17px] text-slate-900">Featured Skills</h2>
             <button className="text-xs font-bold text-violet-600 inline-flex items-center gap-1">View all <ArrowRight className="h-3 w-3" /></button>
           </div>
-          <div className="flex gap-3 -mx-5 px-5 overflow-x-auto no-scrollbar pb-2 snap-x">
-            {loading ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="min-w-[170px] h-[230px] rounded-3xl bg-slate-100 animate-pulse snap-start" />
+          <div className="grid grid-cols-2 gap-3 pb-1">
+            {loading ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-[200px] rounded-3xl bg-slate-100 animate-pulse" />
             )) : skills.map((s) => {
               const Icon = ICON_MAP[s.icon] ?? Sparkles;
               const t = CARD_THEME[s.color] ?? CARD_THEME.primary;
               const us = userSkills[s.id];
               const pct = us ? Math.round((us.completed_lessons / Math.max(s.lessons_count, 1)) * 100) : 0;
               return (
-                <div key={s.id} className={`min-w-[180px] max-w-[180px] rounded-3xl ${t.card} p-3.5 snap-start flex flex-col`}>
+                <div key={s.id} className={`rounded-3xl ${t.card} p-3 flex flex-col`}>
                   <div className="flex items-start justify-between">
-                    <div className={`h-14 w-14 rounded-2xl ${t.tile} flex items-center justify-center shadow-md`}>
-                      <Icon className="h-7 w-7 text-white" strokeWidth={2.5} />
+                    <div className={`h-12 w-12 rounded-2xl ${t.tile} flex items-center justify-center shadow-md`}>
+                      <Icon className="h-6 w-6 text-white" strokeWidth={2.5} />
                     </div>
                     {s.popular && (
                       <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-700 bg-white/80 rounded-full px-2 py-0.5">
-                        🔥 Popular
+                        🔥
                       </span>
                     )}
                   </div>
-                  <h3 className="font-extrabold text-[15px] leading-tight mt-3 text-slate-900">{s.title}</h3>
+                  <h3 className="font-extrabold text-[14px] leading-tight mt-2.5 text-slate-900 line-clamp-2">{s.title}</h3>
                   <p className="text-[10px] text-slate-600 mt-1 leading-snug line-clamp-2">{s.description}</p>
                   <div className="mt-2.5">
                     <div className={`h-1.5 rounded-full ${t.barTrack} overflow-hidden`}>
@@ -182,9 +182,12 @@ export const SkillsScreen = () => {
                     <div className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-700">
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> {s.rating}
                     </div>
-                    <span className="text-[9px] font-extrabold rounded-full px-2 py-1 bg-slate-200 text-slate-600">
-                      Coming Soon
-                    </span>
+                    <button
+                      onClick={() => handleStart(s)}
+                      className={`text-[9px] font-extrabold rounded-full px-2 py-1 text-white tap-scale ${t.btn}`}
+                    >
+                      {userSkills[s.id] ? "Continue" : "Start"}
+                    </button>
                   </div>
                 </div>
               );
@@ -220,9 +223,12 @@ export const SkillsScreen = () => {
             </div>
             <div className="mt-3 flex items-center justify-between gap-3">
               <p className="text-[11px] text-slate-600 inline-flex items-center gap-1 truncate">🪙 Unlock for <span className="font-bold">{recommended.cost_coins} coins</span></p>
-              <span className="bg-slate-200 text-slate-600 text-[11px] font-extrabold rounded-xl px-4 py-2 flex-shrink-0">
-                Coming Soon
-              </span>
+              <button
+                onClick={() => handleStart(recommended)}
+                className="bg-amber-500 text-white text-[11px] font-extrabold rounded-xl px-4 py-2 flex-shrink-0 tap-scale"
+              >
+                Start Learning
+              </button>
             </div>
           </div>
         )}
@@ -261,8 +267,8 @@ export const SkillsScreen = () => {
                   <p className="text-[10px] text-slate-500 mt-1">Lesson {completed} of {target.lessons_count}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                  <span className="bg-slate-200 text-slate-600 text-[10px] font-extrabold px-2.5 py-1.5 rounded-full whitespace-nowrap">Coming Soon</span>
-                  <span className="text-[10px] text-slate-500 inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> Soon</span>
+                  <span className={`text-white text-[10px] font-extrabold px-2.5 py-1.5 rounded-full whitespace-nowrap ${t.btn}`}>Resume</span>
+                  <span className="text-[10px] text-slate-500 inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> Now</span>
                 </div>
               </button>
             );

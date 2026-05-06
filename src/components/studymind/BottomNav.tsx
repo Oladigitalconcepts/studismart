@@ -1,16 +1,16 @@
-import { Home, Target, Bot, GraduationCap, Wallet } from "lucide-react";
+import { Home, BookOpen, Bot, GraduationCap, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 
-export type Screen = "home" | "practice" | "tutor" | "skills" | "wallet";
+export type Screen = "home" | "materials" | "tutor" | "skills" | "profile";
 
 const tabs: { id: Screen; label: string; icon: typeof Home; path: string }[] = [
   { id: "home", label: "Home", icon: Home, path: "/home" },
-  { id: "practice", label: "Practice", icon: Target, path: "/practice" },
+  { id: "materials", label: "Materials", icon: BookOpen, path: "/materials" },
   { id: "tutor", label: "AI Tutor", icon: Bot, path: "/tutor" },
   { id: "skills", label: "Skills", icon: GraduationCap, path: "/skills" },
-  { id: "wallet", label: "Wallet", icon: Wallet, path: "/wallet" },
+  { id: "profile", label: "Profile", icon: User, path: "/profile" },
 ];
 
 export const BottomNav = () => {
@@ -20,8 +20,8 @@ export const BottomNav = () => {
   const activeId: Screen =
     pathname.startsWith("/tutor") ? "tutor"
     : pathname.startsWith("/skills") ? "skills"
-    : pathname.startsWith("/wallet") ? "wallet"
-    : pathname.startsWith("/practice") ? "practice"
+    : pathname.startsWith("/materials") ? "materials"
+    : pathname.startsWith("/profile") ? "profile"
     : "home";
 
   return (
@@ -69,4 +69,3 @@ export const BottomNav = () => {
     </nav>
   );
 };
-

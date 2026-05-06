@@ -4,6 +4,7 @@ import {
   BookOpen, AlertTriangle, Flame, CalendarDays, Trophy, ArrowRight,
   FileCheck2, Users, Bot, Play,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { StatusBar } from "./StatusBar";
 import { CoinBalancePill } from "./CoinBalancePill";
 import { Card } from "@/components/ui/card";
@@ -52,6 +53,7 @@ const initialsOf = (name: string) =>
   (name || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
 export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
+  const navigate = useNavigate();
   const { unread } = useNotifications();
   const [profile, setProfile] = useState<Profile | null>(() => {
     try {
@@ -332,7 +334,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
                   Start Practice <ChevronRight className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => comingSoon("AI Tutor")}
+                  onClick={() => navigate("/tutor")}
                   className="flex-1 bg-white/15 backdrop-blur border border-white/30 text-white font-semibold text-sm rounded-xl py-2.5 px-3 tap-scale flex items-center justify-center gap-1.5"
                 >
                   Ask AI Tutor <Bot className="h-4 w-4" />
@@ -362,8 +364,8 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
             color="text-orange-500" bg="bg-orange-500/10" onClick={() => onNavigate("quiz-for-others" as any)}
           />
           <QuickAction
-            icon={Bot} title="AI Tutor" subtitle="Coming soon"
-            color="text-emerald-500" bg="bg-emerald-500/10" onClick={() => comingSoon("AI Tutor")}
+            icon={Bot} title="AI Tutor" subtitle="Ask any subject"
+            color="text-emerald-500" bg="bg-emerald-500/10" onClick={() => navigate("/tutor")}
           />
         </div>
       </div>
