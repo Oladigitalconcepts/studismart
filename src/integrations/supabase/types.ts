@@ -688,6 +688,128 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_cache: {
+        Row: {
+          action: string
+          created_at: string
+          hash: string
+          hits: number
+          model: string | null
+          response: string
+          tutor_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          hash: string
+          hits?: number
+          model?: string | null
+          response: string
+          tutor_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          hash?: string
+          hits?: number
+          model?: string | null
+          response?: string
+          tutor_id?: string
+        }
+        Relationships: []
+      }
+      tutor_chats: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          tutor_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          tutor_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          tutor_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tutor_daily_usage: {
+        Row: {
+          day: string
+          free_count: number
+          user_id: string
+        }
+        Insert: {
+          day: string
+          free_count?: number
+          user_id: string
+        }
+        Update: {
+          day?: string
+          free_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tutor_messages: {
+        Row: {
+          action: string | null
+          cached: boolean
+          chat_id: string
+          coins_spent: number
+          content: string
+          created_at: string
+          id: string
+          model: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          action?: string | null
+          cached?: boolean
+          chat_id: string
+          coins_spent?: number
+          content: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          action?: string | null
+          cached?: boolean
+          chat_id?: string
+          coins_spent?: number
+          content?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_skills: {
         Row: {
           completed_lessons: number
@@ -867,6 +989,30 @@ export type Database = {
           coins: number
           status: string
         }[]
+      }
+      spend_coins_for_tutor: {
+        Args: {
+          _amount: number
+          _idempotency_key: string
+          _reason: string
+          _user_id: string
+        }
+        Returns: {
+          coins: number
+          created_at: string
+          last_login_date: string | null
+          level: number
+          streak_days: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       weekly_leaderboard: {
         Args: never
