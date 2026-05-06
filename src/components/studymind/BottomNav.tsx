@@ -30,11 +30,8 @@ export const BottomNav = () => {
             <button
               key={id}
               onClick={() => {
-                if (isActive) {
-                  window.dispatchEvent(new CustomEvent("bottom-nav-reset", { detail: { tab: id } }));
-                } else {
-                  navigate(path);
-                }
+                navigate(path);
+                window.dispatchEvent(new CustomEvent("bottom-nav-reset", { detail: { tab: id } }));
               }}
               className="flex flex-col items-center justify-center gap-1 tap-scale relative"
             >
