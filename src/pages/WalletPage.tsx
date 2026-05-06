@@ -65,8 +65,11 @@ const WalletPage = () => {
       params.delete("reference"); params.delete("trxref");
       setParams(params, { replace: true });
     };
-    const timer = setInterval(async () => {
+    const tick = async () => {
       attempts++;
+      // Defense in depth: ask our edge fn to verify with Paystack and credit.
+      // Webhook may also have credited it — `credit_purchase` is idempotent.
+      try { await supabase.functions.invoke("paystack-verify", { body: { reference } }); } catch { /* noop */ }
       const { data } = await supabase
         .from("coin_purchases")
         .select("status, coins")
@@ -93,7 +96,9 @@ const WalletPage = () => {
         setVerifyMsg("We couldn't confirm your payment in time. Coins will appear once Paystack confirms.");
         clearUrl();
       }
-    }, 1500);
+    };
+    const timer = setInterval(tick, 1500);
+    tick();
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
