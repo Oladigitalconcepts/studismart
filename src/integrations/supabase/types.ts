@@ -784,8 +784,8 @@ export type Database = {
         Args: {
           _idempotency_key?: string
           _mission_key: string
-          _reward: number
-          _target: number
+          _reward?: number
+          _target?: number
         }
         Returns: {
           coins: number
