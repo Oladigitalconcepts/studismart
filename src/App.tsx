@@ -26,6 +26,8 @@ import SkillDetailPage from "./pages/SkillDetailPage";
 import WalletPage from "./pages/WalletPage";
 import WalletSuccessPage from "./pages/WalletSuccessPage";
 import MissionsPage from "./pages/MissionsPage";
+import TutorsPage from "./pages/TutorsPage";
+import TutorChatPage from "./pages/TutorChatPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +65,8 @@ const App = () => (
             <Route path="/wallet" element={<WalletPage />} />
             <Route path="/wallet/success" element={<WalletSuccessPage />} />
             <Route path="/missions" element={<MissionsPage />} />
+            <Route path="/tutor" element={<TutorsPage />} />
+            <Route path="/tutor/:tutorId" element={<TutorChatPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Route>
