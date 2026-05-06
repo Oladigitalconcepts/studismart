@@ -159,18 +159,18 @@ export const SkillsScreen = () => {
               const us = userSkills[s.id];
               const pct = us ? Math.round((us.completed_lessons / Math.max(s.lessons_count, 1)) * 100) : 0;
               return (
-                <div key={s.id} className={`min-w-[180px] max-w-[180px] rounded-3xl ${t.card} p-3.5 snap-start flex flex-col`}>
+                <div key={s.id} className={`rounded-3xl ${t.card} p-3 flex flex-col`}>
                   <div className="flex items-start justify-between">
-                    <div className={`h-14 w-14 rounded-2xl ${t.tile} flex items-center justify-center shadow-md`}>
-                      <Icon className="h-7 w-7 text-white" strokeWidth={2.5} />
+                    <div className={`h-12 w-12 rounded-2xl ${t.tile} flex items-center justify-center shadow-md`}>
+                      <Icon className="h-6 w-6 text-white" strokeWidth={2.5} />
                     </div>
                     {s.popular && (
                       <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-700 bg-white/80 rounded-full px-2 py-0.5">
-                        🔥 Popular
+                        🔥
                       </span>
                     )}
                   </div>
-                  <h3 className="font-extrabold text-[15px] leading-tight mt-3 text-slate-900">{s.title}</h3>
+                  <h3 className="font-extrabold text-[14px] leading-tight mt-2.5 text-slate-900 line-clamp-2">{s.title}</h3>
                   <p className="text-[10px] text-slate-600 mt-1 leading-snug line-clamp-2">{s.description}</p>
                   <div className="mt-2.5">
                     <div className={`h-1.5 rounded-full ${t.barTrack} overflow-hidden`}>
