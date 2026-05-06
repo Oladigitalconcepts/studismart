@@ -332,7 +332,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
                   Start Practice <ChevronRight className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => comingSoon("AI Tutor")}
+                  onClick={() => window.location.assign("/tutor")}
                   className="flex-1 bg-white/15 backdrop-blur border border-white/30 text-white font-semibold text-sm rounded-xl py-2.5 px-3 tap-scale flex items-center justify-center gap-1.5"
                 >
                   Ask AI Tutor <Bot className="h-4 w-4" />
