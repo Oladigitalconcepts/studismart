@@ -130,19 +130,14 @@ export const SkillsScreen = () => {
             <p className="text-[10px] text-white/70 mt-1 leading-snug line-clamp-2">
               Complete a lesson today and earn <span className="text-amber-300 font-bold">5 coins</span>
             </p>
-          </div>
-          <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
-            <span className="text-lg leading-none">🔥</span>
-            <p className="font-extrabold text-base leading-none">{streakDays || 0}</p>
-            <p className="text-[8px] text-white/70 leading-none">Day Streak</p>
-          </div>
-          <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
-            <div className="relative h-8 w-8 flex items-center justify-center">
-              <div className="absolute inset-0 bg-violet-500 rounded-[8px] rotate-45" />
-              <Zap className="relative h-4 w-4 text-white" fill="white" />
+            <div className="mt-2 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold">
+                🔥 {streakDays || 0} <span className="text-white/60 font-medium">day streak</span>
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/30 px-2 py-0.5 text-[10px] font-bold">
+                <Zap className="h-2.5 w-2.5" /> Skill Rookie
+              </span>
             </div>
-            <p className="text-[8px] text-white/80 font-semibold leading-none mt-0.5">Skill Rookie</p>
-            <p className="text-[7px] text-white/60 leading-none">Next at 80%</p>
           </div>
         </div>
       </div>
@@ -338,12 +333,12 @@ const CircularProgress = ({ percent }: { percent: number }) => {
 };
 
 const StatTile = ({ color, iconBg, icon: Icon, value, label, sub }: { color: string; iconBg: string; icon: any; value: number | string; label: string; sub: string }) => (
-  <div className={`rounded-2xl ${color} p-2.5 flex flex-col items-start gap-1 min-w-0`}>
-    <div className={`h-8 w-8 rounded-xl ${iconBg} flex items-center justify-center shadow-sm`}>
-      <Icon className="h-4 w-4 text-white" />
+  <div className={`rounded-2xl ${color} p-2 flex flex-col items-start gap-1 min-w-0 overflow-hidden`}>
+    <div className={`h-7 w-7 rounded-lg ${iconBg} flex items-center justify-center shadow-sm`}>
+      <Icon className="h-3.5 w-3.5 text-white" />
     </div>
-    <p className="font-extrabold text-base leading-none text-slate-900 tabular-nums">{value}</p>
-    <p className="text-[9px] font-bold leading-tight text-slate-700 break-words">{label}</p>
-    <p className="text-[8px] text-slate-500 leading-tight break-words">{sub}</p>
+    <p className="font-extrabold text-[15px] leading-none text-slate-900 tabular-nums">{value}</p>
+    <p className="text-[9px] font-bold leading-tight text-slate-700 line-clamp-2 w-full">{label}</p>
+    <p className="text-[8px] text-slate-500 leading-tight line-clamp-1 w-full">{sub}</p>
   </div>
 );
