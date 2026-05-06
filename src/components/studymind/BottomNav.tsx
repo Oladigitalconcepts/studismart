@@ -1,15 +1,16 @@
-import { Home, FolderOpen, GraduationCap, User } from "lucide-react";
+import { Home, Target, Bot, GraduationCap, Wallet } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 
-export type Screen = "home" | "materials" | "skills" | "profile";
+export type Screen = "home" | "practice" | "tutor" | "skills" | "wallet";
 
 const tabs: { id: Screen; label: string; icon: typeof Home; path: string }[] = [
   { id: "home", label: "Home", icon: Home, path: "/home" },
-  { id: "materials", label: "Materials", icon: FolderOpen, path: "/materials" },
+  { id: "practice", label: "Practice", icon: Target, path: "/practice" },
+  { id: "tutor", label: "AI Tutor", icon: Bot, path: "/tutor" },
   { id: "skills", label: "Skills", icon: GraduationCap, path: "/skills" },
-  { id: "profile", label: "Profile", icon: User, path: "/profile" },
+  { id: "wallet", label: "Wallet", icon: Wallet, path: "/wallet" },
 ];
 
 export const BottomNav = () => {
@@ -17,9 +18,10 @@ export const BottomNav = () => {
   const { pathname } = useLocation();
 
   const activeId: Screen =
-    pathname.startsWith("/skills") ? "skills"
-    : pathname.startsWith("/materials") ? "materials"
-    : pathname.startsWith("/profile") ? "profile"
+    pathname.startsWith("/tutor") ? "tutor"
+    : pathname.startsWith("/skills") ? "skills"
+    : pathname.startsWith("/wallet") ? "wallet"
+    : pathname.startsWith("/practice") ? "practice"
     : "home";
 
   return (
@@ -27,7 +29,7 @@ export const BottomNav = () => {
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card/90 backdrop-blur-xl border-t border-border z-50 safe-bottom"
       style={{ WebkitBackdropFilter: "blur(20px)" }}
     >
-      <div className="grid grid-cols-4 h-16 relative">
+      <div className="grid grid-cols-5 h-16 relative">
         {tabs.map(({ id, label, icon: Icon, path }) => {
           const isActive = activeId === id;
           return (
