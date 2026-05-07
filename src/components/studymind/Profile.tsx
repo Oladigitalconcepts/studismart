@@ -1007,13 +1007,21 @@ const EditProfileScreen = ({
         course_code: course.trim() ? course.trim() : null,
         updated_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+      const { data: saved, error } = await supabase
+        .from("profiles")
+        .upsert(payload, { onConflict: "id" })
+        .select("display_name, course_code")
+        .single();
       if (error) {
         setStatus("error");
         setErrors((e) => ({ ...e, form: error.message }));
         return;
       }
-      savedRef.current = { name, course };
+      const persistedName = saved?.display_name ?? name.trim();
+      const persistedCourse = saved?.course_code ?? "";
+      setDisplayName(persistedName);
+      setCourseCode(persistedCourse);
+      savedRef.current = { name: persistedName, course: persistedCourse };
       setErrors((e) => ({ ...e, form: undefined }));
       setStatus("saved");
       window.dispatchEvent(new CustomEvent("profile-updated"));
@@ -1264,9 +1272,31 @@ const EditProfileScreen = ({
         )}
 
         <Button
+          onClick={async () => {
+            if (debounceRef.current) {
+              window.clearTimeout(debounceRef.current);
+              debounceRef.current = null;
+            }
+            const { ok, errs } = validate(displayName, courseCode);
+            setErrors((prev) => ({ ...errs, form: prev.form }));
+            if (!ok) return;
+            await persist(displayName, courseCode);
+          }}
+          disabled={status === "saving" || !!errors.display_name || !!errors.course_code}
+          className="w-full mt-6 h-12 rounded-2xl gradient-primary text-white font-semibold"
+        >
+          {status === "saving" ? (
+            <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Saving…</span>
+          ) : status === "saved" ? (
+            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Saved</span>
+          ) : (
+            "Save Changes"
+          )}
+        </Button>
+        <Button
           onClick={onBack}
           variant="outline"
-          className="w-full mt-6 h-12 rounded-2xl font-semibold"
+          className="w-full mt-2 h-12 rounded-2xl font-semibold"
         >
           Done
         </Button>
@@ -1424,16 +1454,35 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
   }, []);
 
   const save = async (patch: Partial<NotifPrefs>) => {
+    const prev = prefs;
     const next = { ...prefs, ...patch };
     setPrefs(next);
     setSaving(true);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    const { data: saved, error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" })
+      .select("notify_study_reminders, notify_new_features, notify_practice_streaks, notify_weekly_summary, quiet_hours_start, quiet_hours_end, reminder_time, push_enabled")
+      .single();
     setSaving(false);
     if (error) {
+      setPrefs(prev);
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
+    }
+    if (saved) {
+      setPrefs({
+        notify_study_reminders: saved.notify_study_reminders ?? true,
+        notify_new_features: saved.notify_new_features ?? true,
+        notify_practice_streaks: saved.notify_practice_streaks ?? true,
+        notify_weekly_summary: saved.notify_weekly_summary ?? false,
+        quiet_hours_start: saved.quiet_hours_start ?? null,
+        quiet_hours_end: saved.quiet_hours_end ?? null,
+        reminder_time: saved.reminder_time ?? "19:00",
+        push_enabled: saved.push_enabled ?? false,
+      });
+      setQuietEnabled(!!(saved.quiet_hours_start && saved.quiet_hours_end));
     }
     window.dispatchEvent(new CustomEvent("profile-updated"));
     // Reschedule local reminder if reminder time or study-reminder toggle changed.
@@ -1646,15 +1695,32 @@ const EmailPreferencesScreen = ({ onBack }: { onBack: () => void }) => {
   }, []);
 
   const save = async (patch: Partial<EmailPrefs>) => {
+    const prev = prefs;
     const next = { ...prefs, ...patch };
     setPrefs(next);
     setSaving(true);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    const { data: saved, error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" })
+      .select("email_weekly_digest, email_product_updates, email_study_tips, email_security_alerts")
+      .single();
     setSaving(false);
-    if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
-    else window.dispatchEvent(new CustomEvent("profile-updated"));
+    if (error) {
+      setPrefs(prev);
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (saved) {
+      setPrefs({
+        email_weekly_digest: saved.email_weekly_digest ?? true,
+        email_product_updates: saved.email_product_updates ?? true,
+        email_study_tips: saved.email_study_tips ?? false,
+        email_security_alerts: saved.email_security_alerts ?? true,
+      });
+    }
+    window.dispatchEvent(new CustomEvent("profile-updated"));
   };
 
   const unsubscribeAll = async () => {
@@ -1736,13 +1802,18 @@ const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
     setSelected(code);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(null); return; }
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, language: code, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    const { data: saved, error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, language: code, updated_at: new Date().toISOString() }, { onConflict: "id" })
+      .select("language")
+      .single();
     setSaving(null);
     if (error) {
       setSelected(prev);
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
     }
+    if (saved?.language) setSelected(saved.language);
     window.dispatchEvent(new CustomEvent("profile-updated"));
     toast({ title: "Language updated", description: LANGUAGES.find((l) => l.code === code)?.label });
   };
