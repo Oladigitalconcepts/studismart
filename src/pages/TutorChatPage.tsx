@@ -311,8 +311,8 @@ export default function TutorChatPage() {
 
   return (
     <div
-      className="fixed inset-x-0 top-0 mx-auto w-full max-w-md flex flex-col bg-background z-20"
-      style={{ bottom: "var(--bottom-nav-h, 64px)" }}
+      className="fixed inset-x-0 top-0 bottom-0 mx-auto w-full max-w-md flex flex-col bg-background z-20"
+      style={{ height: "calc(100dvh - var(--bottom-nav-h, 64px))" }}
     >
       <StatusBar tone="background" />
 
