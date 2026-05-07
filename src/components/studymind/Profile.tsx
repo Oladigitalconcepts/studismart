@@ -1429,7 +1429,7 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
     setSaving(true);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
-    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" });
     setSaving(false);
     if (error) {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
@@ -1565,7 +1565,14 @@ const LogoutScreen = ({ onCancel }: { onCancel: () => void }) => {
   const [loading, setLoading] = useState(false);
   const signOut = async () => {
     setLoading(true);
-    try { localStorage.removeItem("studymind-profile-cache"); } catch { /* noop */ }
+    try {
+      // Clear legacy + per-user profile caches so the next user can't see stale data.
+      Object.keys(localStorage).forEach((k) => {
+        if (k === "studymind-profile-cache" || k.startsWith("studymind-profile-cache:")) {
+          localStorage.removeItem(k);
+        }
+      });
+    } catch { /* noop */ }
     await supabase.auth.signOut();
   };
   return (
@@ -1644,7 +1651,7 @@ const EmailPreferencesScreen = ({ onBack }: { onBack: () => void }) => {
     setSaving(true);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
-    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" });
     setSaving(false);
     if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
     else window.dispatchEvent(new CustomEvent("profile-updated"));
@@ -1729,7 +1736,7 @@ const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
     setSelected(code);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(null); return; }
-    const { error } = await supabase.from("profiles").update({ language: code }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, language: code, updated_at: new Date().toISOString() }, { onConflict: "id" });
     setSaving(null);
     if (error) {
       setSelected(prev);
