@@ -35,7 +35,7 @@ export const TUTORS: Tutor[] = [
     inputAccent: "bg-violet-500",
     placeholder: "Ask about code, programming or systems…",
     actions: [
-      { key: "show_code", label: "Show Code", cost: 0 },
+      { key: "show_code", label: "Show Code", cost: 1 },
       { key: "explain_more", label: "Explain Line-by-Line", cost: 1 },
       { key: "debug", label: "Debug This", cost: 1 },
     ],
@@ -51,8 +51,8 @@ export const TUTORS: Tutor[] = [
     inputAccent: "bg-orange-500",
     placeholder: "Ask engineering problems or concepts…",
     actions: [
-      { key: "step_by_step", label: "Break it Down", cost: 0 },
-      { key: "show_formula", label: "Show Formula", cost: 0 },
+      { key: "step_by_step", label: "Break it Down", cost: 1 },
+      { key: "show_formula", label: "Show Formula", cost: 1 },
       { key: "deep", label: "Solve Step-by-Step", cost: 2 },
     ],
   },
@@ -67,9 +67,9 @@ export const TUTORS: Tutor[] = [
     inputAccent: "bg-emerald-500",
     placeholder: "Ask any science question…",
     actions: [
-      { key: "simplify", label: "Simplify", cost: 0 },
-      { key: "give_example", label: "Give Example", cost: 0 },
-      { key: "visualize", label: "Visualize", cost: 0 },
+      { key: "simplify", label: "Simplify", cost: 1 },
+      { key: "give_example", label: "Give Example", cost: 1 },
+      { key: "visualize", label: "Visualize", cost: 1 },
     ],
   },
   {
@@ -84,7 +84,7 @@ export const TUTORS: Tutor[] = [
     placeholder: "Ask about business, finance or marketing…",
     actions: [
       { key: "case_study", label: "Give Case Study", cost: 1 },
-      { key: "real_example", label: "Real Example", cost: 0 },
+      { key: "real_example", label: "Real Example", cost: 1 },
       { key: "strategy", label: "Explain Strategy", cost: 1 },
     ],
   },
@@ -99,7 +99,7 @@ export const TUTORS: Tutor[] = [
     inputAccent: "bg-sky-500",
     placeholder: "Type or practice your language…",
     actions: [
-      { key: "correct", label: "Correct Me", cost: 0 },
+      { key: "correct", label: "Correct Me", cost: 1 },
       { key: "improve_sentence", label: "Improve Sentence", cost: 1 },
       { key: "practice", label: "Practice Conversation", cost: 1 },
     ],
@@ -115,8 +115,8 @@ export const TUTORS: Tutor[] = [
     inputAccent: "bg-green-600",
     placeholder: "Ask about crops, soil or farming…",
     actions: [
-      { key: "tips", label: "Give Tips", cost: 0 },
-      { key: "best_practice", label: "Best Practice", cost: 0 },
+      { key: "tips", label: "Give Tips", cost: 1 },
+      { key: "best_practice", label: "Best Practice", cost: 1 },
       { key: "common_mistakes", label: "Common Mistakes", cost: 1 },
     ],
   },
@@ -131,8 +131,8 @@ export const TUTORS: Tutor[] = [
     inputAccent: "bg-teal-500",
     placeholder: "Ask about geography or environment…",
     actions: [
-      { key: "concept", label: "Explain Concept", cost: 0 },
-      { key: "give_example", label: "Give Example", cost: 0 },
+      { key: "concept", label: "Explain Concept", cost: 1 },
+      { key: "give_example", label: "Give Example", cost: 1 },
       { key: "why_matters", label: "Why it matters", cost: 1 },
     ],
   },
