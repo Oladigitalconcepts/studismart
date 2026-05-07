@@ -25,7 +25,16 @@ const REASON_ICONS: Record<string, any> = {
   lesson_complete: Sparkles,
 };
 
-const reasonLabel = (r: string) => r.replace(/^mission_/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+const reasonLabel = (r: string) => {
+  if (r.startsWith("tutor_")) {
+    const parts = r.split("_");
+    const tutor = parts[1] ?? "";
+    const action = parts.slice(2).join(" ");
+    const tutorName = tutor.charAt(0).toUpperCase() + tutor.slice(1);
+    return `AI Tutor · ${tutorName}${action ? ` (${action})` : ""}`;
+  }
+  return r.replace(/^mission_/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 const WalletPage = () => {
   const navigate = useNavigate();

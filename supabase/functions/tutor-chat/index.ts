@@ -56,32 +56,33 @@ const TUTORS: Record<TutorId, { name: string; domain: string; persona: string }>
   },
 };
 
+// Every AI request now costs at least 1 coin. Heavier actions cost more.
 const ACTION_COSTS: Record<Action, number> = {
-  ask: 0,
-  give_example: 0,
-  simplify: 0,
-  visualize: 0,
-  correct: 0,
-  practice: 0,
-  concept: 0,
-  why_matters: 0,
-  show_code: 0,
-  show_formula: 0,
-  tips: 0,
-  best_practice: 0,
-  common_mistakes: 0,
-  real_example: 0,
-  case_study: 0,
-  strategy: 0,
-  improve_sentence: 0,
-  step_by_step: 0,
-  explain_more: 1,
-  debug: 1,
-  generate_quiz: 2,
-  deep: 2,
+  ask: 1,
+  give_example: 1,
+  simplify: 1,
+  visualize: 1,
+  correct: 1,
+  practice: 1,
+  concept: 1,
+  why_matters: 1,
+  show_code: 1,
+  show_formula: 1,
+  tips: 1,
+  best_practice: 1,
+  common_mistakes: 1,
+  real_example: 1,
+  case_study: 1,
+  strategy: 1,
+  improve_sentence: 1,
+  step_by_step: 1,
+  explain_more: 2,
+  debug: 2,
+  generate_quiz: 3,
+  deep: 3,
 };
 
-const FREE_DAILY_LIMIT = 10;
+const FREE_DAILY_LIMIT = 0;
 
 const ROUTE_MODEL = (action: Action, len: number) => {
   if (action === "deep" || action === "generate_quiz") return "google/gemini-2.5-pro";

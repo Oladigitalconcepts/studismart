@@ -27,7 +27,11 @@ export const BottomNav = () => {
   return (
     <nav
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card/90 backdrop-blur-xl border-t border-border z-50 safe-bottom"
-      style={{ WebkitBackdropFilter: "blur(20px)" }}
+      style={{
+        WebkitBackdropFilter: "blur(20px)",
+        // Expose total nav height (incl. safe-area) for fixed elements above it.
+        ["--bottom-nav-h" as any]: "calc(64px + env(safe-area-inset-bottom, 0px))",
+      }}
     >
       <div className="grid grid-cols-5 h-16 relative">
         {tabs.map(({ id, label, icon: Icon, path }) => {
