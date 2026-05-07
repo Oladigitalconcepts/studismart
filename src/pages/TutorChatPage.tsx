@@ -3,7 +3,7 @@
 // FAB, attachment (PDF/DOCX/TXT/IMG -> text), voice input via Web Speech API,
 // auto-expanding textarea, history drawer, markdown + code styling.
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Send, Loader2, Sparkles, AlertTriangle, RotateCcw, MoreVertical,
   Plus, X, Copy, Check, Mic, MicOff, Paperclip, ChevronDown, MessageSquarePlus,
