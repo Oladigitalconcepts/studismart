@@ -127,6 +127,16 @@ export default function TutorChatPage() {
     })();
   }, [tutor?.id]);
 
+  // Prefill input from a redirect suggestion.
+  useEffect(() => {
+    const s = (location.state as any)?.suggested;
+    if (s) {
+      setInput(s);
+      // Clear state so it doesn't refire.
+      window.history.replaceState({}, "");
+    }
+  }, [location.state]);
+
   // Auto-scroll on new messages.
   useEffect(() => {
     const el = scrollRef.current;
