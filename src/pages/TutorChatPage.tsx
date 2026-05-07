@@ -174,7 +174,7 @@ export default function TutorChatPage() {
       return;
     }
     setErrorRetry(null);
-    haptic("light");
+    haptic("success");
     const tempId = `t_${Date.now()}`;
     const nowIso = new Date().toISOString();
     setMessages((prev) => [
