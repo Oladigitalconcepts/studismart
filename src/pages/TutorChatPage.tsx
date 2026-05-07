@@ -574,19 +574,30 @@ export default function TutorChatPage() {
                 <div className="text-xs text-muted-foreground text-center py-6">No previous chats</div>
               )}
               {history.map((c) => (
-                <button
+                <div
                   key={c.id}
-                  onClick={() => loadChat(c.id)}
                   className={cn(
-                    "w-full text-left rounded-xl border border-border bg-card px-3 py-2 tap-scale",
+                    "flex items-center gap-2 rounded-xl border border-border bg-card pl-3 pr-1.5 py-2",
                     chatId === c.id && "ring-2 ring-primary",
                   )}
                 >
-                  <div className="text-sm font-medium truncate">{c.title || "Untitled"}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">
-                    {new Date(c.updated_at).toLocaleString()}
-                  </div>
-                </button>
+                  <button
+                    onClick={() => loadChat(c.id)}
+                    className="flex-1 min-w-0 text-left tap-scale"
+                  >
+                    <div className="text-sm font-medium truncate">{c.title || "Untitled"}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      {new Date(c.updated_at).toLocaleString()}
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => deleteChat(c.id)}
+                    className="tap-scale h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    aria-label="Delete chat"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
