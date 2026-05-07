@@ -1565,7 +1565,14 @@ const LogoutScreen = ({ onCancel }: { onCancel: () => void }) => {
   const [loading, setLoading] = useState(false);
   const signOut = async () => {
     setLoading(true);
-    try { localStorage.removeItem("studymind-profile-cache"); } catch { /* noop */ }
+    try {
+      // Clear legacy + per-user profile caches so the next user can't see stale data.
+      Object.keys(localStorage).forEach((k) => {
+        if (k === "studymind-profile-cache" || k.startsWith("studymind-profile-cache:")) {
+          localStorage.removeItem(k);
+        }
+      });
+    } catch { /* noop */ }
     await supabase.auth.signOut();
   };
   return (
