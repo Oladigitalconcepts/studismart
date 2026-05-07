@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Send, Loader2, Sparkles, AlertTriangle, RotateCcw, MoreVertical,
-  Plus, X, Copy, Check, Mic, MicOff, Paperclip, ChevronDown, MessageSquarePlus,
+  Plus, X, Copy, Check, Mic, MicOff, Paperclip, ChevronDown, MessageSquarePlus, Trash2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
