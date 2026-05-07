@@ -1772,13 +1772,18 @@ const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
     setSelected(code);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(null); return; }
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, language: code, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    const { data: saved, error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, language: code, updated_at: new Date().toISOString() }, { onConflict: "id" })
+      .select("language")
+      .single();
     setSaving(null);
     if (error) {
       setSelected(prev);
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
     }
+    if (saved?.language) setSelected(saved.language);
     window.dispatchEvent(new CustomEvent("profile-updated"));
     toast({ title: "Language updated", description: LANGUAGES.find((l) => l.code === code)?.label });
   };
