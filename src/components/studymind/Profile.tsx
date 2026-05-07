@@ -1272,9 +1272,31 @@ const EditProfileScreen = ({
         )}
 
         <Button
+          onClick={async () => {
+            if (debounceRef.current) {
+              window.clearTimeout(debounceRef.current);
+              debounceRef.current = null;
+            }
+            const { ok, errs } = validate(displayName, courseCode);
+            setErrors((prev) => ({ ...errs, form: prev.form }));
+            if (!ok) return;
+            await persist(displayName, courseCode);
+          }}
+          disabled={status === "saving" || !!errors.display_name || !!errors.course_code}
+          className="w-full mt-6 h-12 rounded-2xl gradient-primary text-white font-semibold"
+        >
+          {status === "saving" ? (
+            <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Saving…</span>
+          ) : status === "saved" ? (
+            <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Saved</span>
+          ) : (
+            "Save Changes"
+          )}
+        </Button>
+        <Button
           onClick={onBack}
           variant="outline"
-          className="w-full mt-6 h-12 rounded-2xl font-semibold"
+          className="w-full mt-2 h-12 rounded-2xl font-semibold"
         >
           Done
         </Button>
