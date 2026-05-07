@@ -1736,7 +1736,7 @@ const LanguageScreen = ({ onBack }: { onBack: () => void }) => {
     setSelected(code);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(null); return; }
-    const { error } = await supabase.from("profiles").update({ language: code }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, language: code, updated_at: new Date().toISOString() }, { onConflict: "id" });
     setSaving(null);
     if (error) {
       setSelected(prev);
