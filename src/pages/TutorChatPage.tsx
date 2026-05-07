@@ -278,7 +278,7 @@ export default function TutorChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input, "ask", 0); }
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input, "ask", 1); }
               }}
               rows={1}
               placeholder="Ask anything…"
