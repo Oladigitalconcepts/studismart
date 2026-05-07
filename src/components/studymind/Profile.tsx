@@ -1424,16 +1424,35 @@ const NotificationsScreen = ({ onBack }: { onBack: () => void }) => {
   }, []);
 
   const save = async (patch: Partial<NotifPrefs>) => {
+    const prev = prefs;
     const next = { ...prefs, ...patch };
     setPrefs(next);
     setSaving(true);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    const { data: saved, error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" })
+      .select("notify_study_reminders, notify_new_features, notify_practice_streaks, notify_weekly_summary, quiet_hours_start, quiet_hours_end, reminder_time, push_enabled")
+      .single();
     setSaving(false);
     if (error) {
+      setPrefs(prev);
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return;
+    }
+    if (saved) {
+      setPrefs({
+        notify_study_reminders: saved.notify_study_reminders ?? true,
+        notify_new_features: saved.notify_new_features ?? true,
+        notify_practice_streaks: saved.notify_practice_streaks ?? true,
+        notify_weekly_summary: saved.notify_weekly_summary ?? false,
+        quiet_hours_start: saved.quiet_hours_start ?? null,
+        quiet_hours_end: saved.quiet_hours_end ?? null,
+        reminder_time: saved.reminder_time ?? "19:00",
+        push_enabled: saved.push_enabled ?? false,
+      });
+      setQuietEnabled(!!(saved.quiet_hours_start && saved.quiet_hours_end));
     }
     window.dispatchEvent(new CustomEvent("profile-updated"));
     // Reschedule local reminder if reminder time or study-reminder toggle changed.
