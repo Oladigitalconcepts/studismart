@@ -55,6 +55,7 @@ const SR: any = typeof window !== "undefined"
 export default function TutorChatPage() {
   const { tutorId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const tutor = getTutor(tutorId);
   const { wallet } = useWallet();
 
