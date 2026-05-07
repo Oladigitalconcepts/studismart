@@ -84,11 +84,9 @@ const ACTION_COSTS: Record<Action, number> = {
 
 const FREE_DAILY_LIMIT = 0;
 
-const ROUTE_MODEL = (action: Action, len: number) => {
-  if (action === "deep" || action === "generate_quiz") return "google/gemini-2.5-pro";
-  if (action === "explain_more" || action === "debug" || len > 400) return "google/gemini-2.5-flash";
-  return "google/gemini-2.5-flash-lite";
-};
+// Every tutor uses a top-tier model so answers are as strong as ChatGPT,
+// just locked to their specialization via the system prompt.
+const ROUTE_MODEL = (_action: Action, _len: number) => "google/gemini-2.5-pro";
 
 const ACTION_INSTRUCTION: Partial<Record<Action, string>> = {
   ask: "Answer concisely.",
