@@ -286,7 +286,7 @@ export default function TutorChatPage() {
             />
             <button
               disabled={sending || !input.trim()}
-              onClick={() => send(input, "ask", 0)}
+              onClick={() => send(input, "ask", 1)}
               className={cn("h-9 w-9 rounded-full flex items-center justify-center text-white tap-scale disabled:opacity-50", tutor.inputAccent)}
               aria-label="Send"
             >
