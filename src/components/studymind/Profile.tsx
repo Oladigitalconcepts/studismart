@@ -1665,15 +1665,32 @@ const EmailPreferencesScreen = ({ onBack }: { onBack: () => void }) => {
   }, []);
 
   const save = async (patch: Partial<EmailPrefs>) => {
+    const prev = prefs;
     const next = { ...prefs, ...patch };
     setPrefs(next);
     setSaving(true);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
-    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" });
+    const { data: saved, error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" })
+      .select("email_weekly_digest, email_product_updates, email_study_tips, email_security_alerts")
+      .single();
     setSaving(false);
-    if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
-    else window.dispatchEvent(new CustomEvent("profile-updated"));
+    if (error) {
+      setPrefs(prev);
+      toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
+      return;
+    }
+    if (saved) {
+      setPrefs({
+        email_weekly_digest: saved.email_weekly_digest ?? true,
+        email_product_updates: saved.email_product_updates ?? true,
+        email_study_tips: saved.email_study_tips ?? false,
+        email_security_alerts: saved.email_security_alerts ?? true,
+      });
+    }
+    window.dispatchEvent(new CustomEvent("profile-updated"));
   };
 
   const unsubscribeAll = async () => {
