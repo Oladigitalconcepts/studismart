@@ -300,7 +300,10 @@ export default function TutorChatPage() {
   const suggestions = tutor.actions.slice(0, 3);
 
   return (
-    <div className="flex flex-col h-[100svh] bg-background relative">
+    <div
+      className="flex flex-col bg-background relative"
+      style={{ height: "calc(100svh - var(--bottom-nav-h, 64px))" }}
+    >
       <StatusBar tone="background" />
 
       {/* HEADER */}
