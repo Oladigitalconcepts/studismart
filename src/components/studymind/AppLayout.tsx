@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { BottomNav } from "@/components/studymind/BottomNav";
 import { InstallPrompt } from "@/components/studymind/InstallPrompt";
 import { OfflineBanner } from "@/components/studymind/OfflineBanner";
+import { PullToRefresh } from "@/components/studymind/PullToRefresh";
 import { useSession } from "@/hooks/useSession";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,12 +75,29 @@ export const AppLayout = () => {
     HIDE_NAV_PREFIXES.includes(location.pathname) || isPublicQuizRoute(location.pathname) || !user;
   const padded = !hideNav;
 
+  const handleRefresh = async () => {
+    // Refresh wallet/coins globally, then notify all screens to re-fetch.
+    try { await ensureWallet(); } catch {}
+    window.dispatchEvent(new CustomEvent("wallet-updated"));
+    window.dispatchEvent(new CustomEvent("app-refresh"));
+    // Give screens a moment to re-fetch in parallel.
+    await new Promise((r) => setTimeout(r, 600));
+  };
+
   return (
     <main className={padded ? "screen-shell" : "screen-shell !pb-0"}>
       {!hideNav && <OfflineBanner />}
-      <div key={location.pathname} className="page-transition">
-        <Outlet />
-      </div>
+      {hideNav ? (
+        <div key={location.pathname} className="page-transition">
+          <Outlet />
+        </div>
+      ) : (
+        <PullToRefresh onRefresh={handleRefresh}>
+          <div key={location.pathname} className="page-transition">
+            <Outlet />
+          </div>
+        </PullToRefresh>
+      )}
       {!hideNav && (
         <>
           <BottomNav />

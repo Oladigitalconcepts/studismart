@@ -76,11 +76,17 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   const [reloadKey, setReloadKey] = useState(0);
   const hasCachedProfile = !!profile;
 
-  // Refresh whenever the profile is edited elsewhere in the app.
+  // Refresh whenever the profile is edited or pull-to-refresh fires.
   useEffect(() => {
     const onUpdate = () => setReloadKey((k) => k + 1);
     window.addEventListener("profile-updated", onUpdate);
-    return () => window.removeEventListener("profile-updated", onUpdate);
+    window.addEventListener("app-refresh", onUpdate);
+    window.addEventListener("wallet-updated", onUpdate);
+    return () => {
+      window.removeEventListener("profile-updated", onUpdate);
+      window.removeEventListener("app-refresh", onUpdate);
+      window.removeEventListener("wallet-updated", onUpdate);
+    };
   }, []);
 
   useEffect(() => {
