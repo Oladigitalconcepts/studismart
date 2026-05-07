@@ -92,7 +92,7 @@ export const AppLayout = () => {
           <Outlet />
         </div>
       ) : (
-        <PullToRefresh onRefresh={handleRefresh}>
+        <PullToRefresh onRefresh={handleRefresh} disabled={location.pathname.startsWith("/tutor/")}>
           <div key={location.pathname} className="page-transition">
             <Outlet />
           </div>

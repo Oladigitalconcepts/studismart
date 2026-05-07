@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Send, Loader2, Sparkles, AlertTriangle, RotateCcw, MoreVertical,
-  Plus, X, Copy, Check, Mic, MicOff, Paperclip, ChevronDown, MessageSquarePlus,
+  Plus, X, Copy, Check, Mic, MicOff, Paperclip, ChevronDown, MessageSquarePlus, Trash2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -252,6 +252,16 @@ export default function TutorChatPage() {
     setHistoryOpen(false);
   };
 
+  const deleteChat = async (id: string) => {
+    if (!confirm("Delete this chat? This cannot be undone.")) return;
+    await supabase.from("tutor_messages").delete().eq("chat_id", id);
+    await supabase.from("tutor_chats").delete().eq("id", id);
+    haptic("light");
+    if (id === chatId) newChat();
+    setHistory((h) => h.filter((c) => c.id !== id));
+    toast({ title: "Chat deleted" });
+  };
+
   // ---- Voice input ----
   const toggleVoice = () => {
     if (!SR) {
@@ -300,7 +310,10 @@ export default function TutorChatPage() {
   const suggestions = tutor.actions.slice(0, 3);
 
   return (
-    <div className="flex flex-col h-[100svh] bg-background relative">
+    <div
+      className="fixed inset-x-0 top-0 mx-auto w-full max-w-md flex flex-col bg-background z-20"
+      style={{ bottom: "var(--bottom-nav-h, 64px)" }}
+    >
       <StatusBar tone="background" />
 
       {/* HEADER */}
@@ -346,10 +359,7 @@ export default function TutorChatPage() {
         onScroll={onScroll}
         className="flex-1 overflow-y-auto momentum-scroll"
       >
-        <div
-          className="mx-auto max-w-md px-4 pt-5 space-y-5"
-          style={{ paddingBottom: "calc(var(--bottom-nav-h, 64px) + 96px)" }}
-        >
+        <div className="mx-auto max-w-md px-4 pt-5 pb-6 space-y-5">
           {messages.length === 0 && (
             <div className="flex flex-col items-center text-center pt-6 animate-fade-in">
               <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shadow-md mb-3", tutor.accent)}>
@@ -377,7 +387,7 @@ export default function TutorChatPage() {
               <div key={m.id} className={cn("group flex flex-col animate-fade-in", isUser ? "items-end" : "items-start")}>
                 <div
                   className={cn(
-                    "max-w-[86%] rounded-3xl px-4 py-2.5 text-[14.5px] leading-relaxed shadow-soft",
+                    "max-w-[86%] rounded-3xl px-4 py-2.5 text-[14.5px] leading-relaxed shadow-soft overflow-hidden break-words [overflow-wrap:anywhere]",
                     isUser
                       ? cn(tutor.user, "rounded-br-md")
                       : "bg-secondary text-foreground rounded-bl-md border border-border/60",
@@ -401,7 +411,7 @@ export default function TutorChatPage() {
                     const { clean, redirect } = parseRedirect(m.content);
                     return (
                       <>
-                        <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-headings:mt-3 prose-headings:mb-1 prose-pre:my-2 prose-pre:rounded-xl prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-pre:p-3 prose-code:text-[12.5px] prose-code:px-1 prose-code:py-0.5 prose-code:rounded-md prose-code:bg-muted prose-code:before:content-none prose-code:after:content-none">
+                        <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-headings:mt-3 prose-headings:mb-1 prose-pre:my-2 prose-pre:rounded-xl prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-pre:p-3 prose-pre:overflow-x-auto prose-pre:max-w-full prose-code:text-[12.5px] prose-code:px-1 prose-code:py-0.5 prose-code:rounded-md prose-code:bg-muted prose-code:before:content-none prose-code:after:content-none [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_code]:break-words [&_a]:break-all">
                           <ReactMarkdown>{clean}</ReactMarkdown>
                         </div>
                         {redirect && (
@@ -460,19 +470,17 @@ export default function TutorChatPage() {
       {showScrollDown && (
         <button
           onClick={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })}
-          className="fixed left-1/2 -translate-x-1/2 z-40 h-9 w-9 rounded-full bg-card border border-border shadow-elevated flex items-center justify-center tap-scale animate-fade-in"
-          style={{ bottom: "calc(var(--bottom-nav-h, 64px) + 96px)" }}
+          className="absolute left-1/2 -translate-x-1/2 z-30 h-9 w-9 rounded-full bg-card border border-border shadow-elevated flex items-center justify-center tap-scale animate-fade-in"
+          style={{ bottom: "96px" }}
           aria-label="Scroll to bottom"
         >
           <ChevronDown className="h-5 w-5" />
         </button>
       )}
 
-      {/* INPUT DOCK */}
-      <div
-        className="fixed left-1/2 -translate-x-1/2 w-full max-w-md bg-background/95 backdrop-blur-xl border-t border-border z-40"
-        style={{ bottom: "calc(var(--bottom-nav-h, 64px) + 4px)" }}
-      >
+      {/* INPUT DOCK — anchored within flex layout so it never moves while scrolling */}
+      <div className="shrink-0 bg-background/95 backdrop-blur-xl border-t border-border z-40 safe-bottom">
+
         {lastIsAssistant && !sending && (
           <div className="px-3 pt-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
             {suggestions.map((a) => (
@@ -566,19 +574,30 @@ export default function TutorChatPage() {
                 <div className="text-xs text-muted-foreground text-center py-6">No previous chats</div>
               )}
               {history.map((c) => (
-                <button
+                <div
                   key={c.id}
-                  onClick={() => loadChat(c.id)}
                   className={cn(
-                    "w-full text-left rounded-xl border border-border bg-card px-3 py-2 tap-scale",
+                    "flex items-center gap-2 rounded-xl border border-border bg-card pl-3 pr-1.5 py-2",
                     chatId === c.id && "ring-2 ring-primary",
                   )}
                 >
-                  <div className="text-sm font-medium truncate">{c.title || "Untitled"}</div>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">
-                    {new Date(c.updated_at).toLocaleString()}
-                  </div>
-                </button>
+                  <button
+                    onClick={() => loadChat(c.id)}
+                    className="flex-1 min-w-0 text-left tap-scale"
+                  >
+                    <div className="text-sm font-medium truncate">{c.title || "Untitled"}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      {new Date(c.updated_at).toLocaleString()}
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => deleteChat(c.id)}
+                    className="tap-scale h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    aria-label="Delete chat"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>

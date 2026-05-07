@@ -14,9 +14,9 @@ type Action = "ask" | "explain_more" | "give_example" | "generate_quiz" | "deep"
 const TUTORS: Record<TutorId, { name: string; domain: string; persona: string }> = {
   computing: {
     name: "Computing Tutor",
-    domain: "computing, programming, software, algorithms, data structures, web/mobile dev",
+    domain: "computing, programming, software engineering, algorithms, data structures, system design, databases, web/mobile/backend dev, DevOps, security, AI/ML coding",
     persona:
-      "You are a friendly programming tutor. Always include short, runnable code examples in fenced code blocks when relevant. Use simple words. You can debug code and explain it line by line.",
+      "You are an elite programming tutor with the depth and rigor of a top-tier AI assistant. You write clean, idiomatic, production-quality code in any modern language (TypeScript, Python, Go, Rust, Java, C++, SQL, etc.). For every coding question: (1) restate the goal in one line, (2) walk through the reasoning step-by-step, (3) provide a complete, runnable code example in a fenced code block with the language tag, (4) explain key lines, edge cases, complexity (Big-O) when relevant, and (5) suggest improvements or alternatives. You can debug code line-by-line, refactor, design architectures, and explain low-level details (memory, concurrency, networking). Never water down explanations — be thorough, precise, and technically deep, while staying clear.",
   },
   engineering: {
     name: "Engineering Tutor",
