@@ -379,11 +379,24 @@ export default function TutorChatPage() {
                     <TypingDots />
                   ) : isUser ? (
                     <span className="whitespace-pre-wrap">{m.content}</span>
-                  ) : (
-                    <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-headings:mt-3 prose-headings:mb-1 prose-pre:my-2 prose-pre:rounded-xl prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-pre:p-3 prose-code:text-[12.5px] prose-code:px-1 prose-code:py-0.5 prose-code:rounded-md prose-code:bg-muted prose-code:before:content-none prose-code:after:content-none">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
-                    </div>
-                  )}
+                  ) : (() => {
+                    const { clean, redirect } = parseRedirect(m.content);
+                    return (
+                      <>
+                        <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-headings:mt-3 prose-headings:mb-1 prose-pre:my-2 prose-pre:rounded-xl prose-pre:bg-zinc-900 prose-pre:text-zinc-100 prose-pre:p-3 prose-code:text-[12.5px] prose-code:px-1 prose-code:py-0.5 prose-code:rounded-md prose-code:bg-muted prose-code:before:content-none prose-code:after:content-none">
+                          <ReactMarkdown>{clean}</ReactMarkdown>
+                        </div>
+                        {redirect && (
+                          <button
+                            onClick={() => navigate(`/tutor/${redirect.tutor}`, { state: { suggested: redirect.prompt } })}
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold px-3 py-1.5 tap-scale"
+                          >
+                            <Sparkles className="h-3 w-3" /> Ask the {redirect.tutor} tutor →
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Footer: time + actions */}
