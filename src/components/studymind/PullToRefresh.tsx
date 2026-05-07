@@ -5,22 +5,19 @@ import { toast } from "sonner";
 interface Props {
   onRefresh: () => Promise<void> | void;
   children: ReactNode;
-  /** Distance (px) the user must drag past the threshold to trigger refresh. */
   threshold?: number;
-  /** Disable pull behaviour (e.g. during route transitions). */
   disabled?: boolean;
-  /** Show a small toast on successful refresh. */
   silent?: boolean;
-  /** Auto-refresh when the tab regains visibility after this many ms. */
+  /** Auto-refresh when the tab regains visibility after this many ms of inactivity. */
   autoRefreshMs?: number;
   className?: string;
 }
 
 /**
- * Lightweight, native-feeling pull-to-refresh wrapper for mobile screens.
- * - Only activates when the inner scroll container is at scrollTop = 0.
- * - Prevents duplicate refreshes via an `isRefreshing` ref.
- * - Auto-refreshes when the tab becomes visible again after `autoRefreshMs`.
+ * Native-feeling pull-to-refresh that works with document scroll.
+ * - Activates only when window.scrollY === 0.
+ * - Prevents duplicate refreshes via a ref guard.
+ * - Auto-refreshes on tab visibility/focus after `autoRefreshMs`.
  */
 export const PullToRefresh = ({
   onRefresh,
@@ -31,9 +28,8 @@ export const PullToRefresh = ({
   autoRefreshMs = 60_000,
   className = "",
 }: Props) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const startY = useRef<number | null>(null);
-  const pulling = useRef(false);
+  const pullingRef = useRef(false);
   const refreshingRef = useRef(false);
   const lastRefreshAt = useRef<number>(Date.now());
 
@@ -49,7 +45,7 @@ export const PullToRefresh = ({
       await onRefresh();
       lastRefreshAt.current = Date.now();
       setSuccess(true);
-      if (!silent) toast.success("Updated", { duration: 1200 });
+      if (!silent) toast.success("Updated", { duration: 1100 });
       setTimeout(() => setSuccess(false), 900);
     } catch (e: any) {
       toast.error(e?.message ?? "Refresh failed");
@@ -60,7 +56,7 @@ export const PullToRefresh = ({
     }
   }, [onRefresh, silent]);
 
-  // Auto-refresh on visibility change after inactivity.
+  // Auto-refresh on visibility/focus after inactivity.
   useEffect(() => {
     const onVis = () => {
       if (document.visibilityState !== "visible") return;
@@ -75,55 +71,60 @@ export const PullToRefresh = ({
     };
   }, [triggerRefresh, autoRefreshMs]);
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    if (disabled || refreshingRef.current) return;
-    const el = containerRef.current;
-    if (!el || el.scrollTop > 0) return;
-    startY.current = e.touches[0].clientY;
-    pulling.current = true;
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!pulling.current || startY.current == null) return;
-    const dy = e.touches[0].clientY - startY.current;
-    if (dy <= 0) {
-      setPullDistance(0);
-      return;
-    }
-    // Resistance curve.
-    const eased = Math.min(120, Math.pow(dy, 0.85));
-    setPullDistance(eased);
-  };
-
-  const onTouchEnd = () => {
-    if (!pulling.current) return;
-    pulling.current = false;
-    startY.current = null;
-    if (pullDistance >= threshold) {
-      triggerRefresh();
-    } else {
-      setPullDistance(0);
-    }
-  };
+  // Touch handlers attached to window so they catch pulls anywhere on screen.
+  useEffect(() => {
+    if (disabled) return;
+    const onStart = (e: TouchEvent) => {
+      if (refreshingRef.current) return;
+      if (window.scrollY > 0) return;
+      startY.current = e.touches[0].clientY;
+      pullingRef.current = true;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!pullingRef.current || startY.current == null) return;
+      const dy = e.touches[0].clientY - startY.current;
+      if (dy <= 0) {
+        if (pullDistance !== 0) setPullDistance(0);
+        return;
+      }
+      // Prevent rubber-banding interference once we own the gesture.
+      if (dy > 8 && e.cancelable) e.preventDefault();
+      const eased = Math.min(120, Math.pow(dy, 0.85));
+      setPullDistance(eased);
+    };
+    const onEnd = () => {
+      if (!pullingRef.current) return;
+      pullingRef.current = false;
+      startY.current = null;
+      setPullDistance((d) => {
+        if (d >= threshold) triggerRefresh();
+        return d >= threshold ? d : 0;
+      });
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    window.addEventListener("touchcancel", onEnd);
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onEnd);
+    };
+  }, [disabled, threshold, triggerRefresh, pullDistance]);
 
   const indicatorOpacity = Math.min(1, pullDistance / threshold);
   const ready = pullDistance >= threshold;
+  const indicatorTop = refreshing ? 24 : Math.max(0, pullDistance - 30);
 
   return (
-    <div
-      ref={containerRef}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      className={`relative h-full overflow-y-auto overscroll-y-contain ${className}`}
-      style={{ WebkitOverflowScrolling: "touch" }}
-    >
-      {/* Indicator */}
+    <div className={`relative ${className}`}>
       <div
-        className="pointer-events-none absolute left-0 right-0 top-0 flex justify-center transition-transform"
+        className="pointer-events-none fixed left-0 right-0 z-50 flex justify-center"
         style={{
-          transform: `translateY(${refreshing ? 16 : Math.max(0, pullDistance - 30)}px)`,
+          top: `calc(env(safe-area-inset-top) + ${indicatorTop}px)`,
           opacity: refreshing ? 1 : indicatorOpacity,
+          transition: pullingRef.current ? "none" : "opacity 200ms ease, top 250ms ease",
         }}
       >
         <div className="h-9 w-9 rounded-full bg-white shadow-md border border-slate-200 flex items-center justify-center">
@@ -141,15 +142,7 @@ export const PullToRefresh = ({
         </div>
       </div>
 
-      {/* Content (translates down with the pull) */}
-      <div
-        style={{
-          transform: `translateY(${refreshing ? 40 : pullDistance * 0.5}px)`,
-          transition: pulling.current ? "none" : "transform 250ms ease",
-        }}
-      >
-        {children}
-      </div>
+      {children}
     </div>
   );
 };
