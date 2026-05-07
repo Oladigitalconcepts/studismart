@@ -460,8 +460,8 @@ export default function TutorChatPage() {
       {showScrollDown && (
         <button
           onClick={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })}
-          className="fixed left-1/2 -translate-x-1/2 z-40 h-9 w-9 rounded-full bg-card border border-border shadow-elevated flex items-center justify-center tap-scale animate-fade-in"
-          style={{ bottom: "calc(var(--bottom-nav-h, 64px) + 96px)" }}
+          className="absolute left-1/2 -translate-x-1/2 z-30 h-9 w-9 rounded-full bg-card border border-border shadow-elevated flex items-center justify-center tap-scale animate-fade-in"
+          style={{ bottom: "96px" }}
           aria-label="Scroll to bottom"
         >
           <ChevronDown className="h-5 w-5" />
