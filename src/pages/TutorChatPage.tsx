@@ -40,6 +40,13 @@ const fmtTime = (iso?: string) => {
   } catch { return ""; }
 };
 
+const REDIRECT_RE = /\[\[REDIRECT\s+tutor=([a-z]+)\s+prompt="([^"]+)"\s*\]\]/i;
+const parseRedirect = (text: string): { clean: string; redirect: { tutor: string; prompt: string } | null } => {
+  const m = text.match(REDIRECT_RE);
+  if (!m) return { clean: text, redirect: null };
+  return { clean: text.replace(REDIRECT_RE, "").trim(), redirect: { tutor: m[1].toLowerCase(), prompt: m[2] } };
+};
+
 // Detect Speech Recognition (Chrome/Safari iOS supports webkitSpeechRecognition).
 const SR: any = typeof window !== "undefined"
   ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
