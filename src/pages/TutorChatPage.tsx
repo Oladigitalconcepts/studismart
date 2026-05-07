@@ -377,7 +377,7 @@ export default function TutorChatPage() {
               <div key={m.id} className={cn("group flex flex-col animate-fade-in", isUser ? "items-end" : "items-start")}>
                 <div
                   className={cn(
-                    "max-w-[86%] rounded-3xl px-4 py-2.5 text-[14.5px] leading-relaxed shadow-soft",
+                    "max-w-[86%] rounded-3xl px-4 py-2.5 text-[14.5px] leading-relaxed shadow-soft overflow-hidden break-words [overflow-wrap:anywhere]",
                     isUser
                       ? cn(tutor.user, "rounded-br-md")
                       : "bg-secondary text-foreground rounded-bl-md border border-border/60",
