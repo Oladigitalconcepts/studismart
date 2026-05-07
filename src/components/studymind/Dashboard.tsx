@@ -110,7 +110,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
             avatar_url: prof?.avatar_url ?? null,
           };
           setProfile(nextProfile);
-          try { localStorage.setItem("studymind-profile-cache", JSON.stringify(nextProfile)); } catch { /* noop */ }
+          try { localStorage.setItem(`studymind-profile-cache:${user.id}`, JSON.stringify(nextProfile)); } catch { /* noop */ }
         });
 
       // PHASE 2 — secondary data in parallel (defers slightly so paint isn't blocked).
