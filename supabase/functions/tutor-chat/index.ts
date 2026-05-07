@@ -84,11 +84,9 @@ const ACTION_COSTS: Record<Action, number> = {
 
 const FREE_DAILY_LIMIT = 0;
 
-const ROUTE_MODEL = (action: Action, len: number) => {
-  if (action === "deep" || action === "generate_quiz") return "google/gemini-2.5-pro";
-  if (action === "explain_more" || action === "debug" || len > 400) return "google/gemini-2.5-flash";
-  return "google/gemini-2.5-flash-lite";
-};
+// Every tutor uses a top-tier model so answers are as strong as ChatGPT,
+// just locked to their specialization via the system prompt.
+const ROUTE_MODEL = (_action: Action, _len: number) => "google/gemini-2.5-pro";
 
 const ACTION_INSTRUCTION: Partial<Record<Action, string>> = {
   ask: "Answer concisely.",
@@ -195,7 +193,7 @@ Deno.serve(async (req) => {
       }
 
       model = ROUTE_MODEL(action, message.length);
-      const system = `${tutor.persona}\n\nYour ONLY domain is: ${tutor.domain}.\nIf the user asks something clearly outside that domain, reply: "This is outside my specialization, but I can guide you briefly…" then give 2-3 short sentences and suggest the right tutor.\nKeep replies between 80 and 300 words. Use bullet points or numbered steps when helpful. Do not be verbose.`;
+      const system = `${tutor.persona}\n\nYour ONLY domain is: ${tutor.domain}.\nIf the user asks something clearly outside that domain, reply: "This is outside my specialization, but I can guide you briefly…" then give 2-3 short sentences and suggest the right tutor.\nWithin your domain, answer with the depth, accuracy and clarity of a top-tier AI assistant (ChatGPT-level). Use clean Markdown: short paragraphs, bullets or numbered steps, code blocks when relevant, and concrete examples. Be thorough but never padded.`;
       const userPrompt = ACTION_INSTRUCTION[action] ? `${ACTION_INSTRUCTION[action]}\n\nUser: ${message}` : message;
 
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
