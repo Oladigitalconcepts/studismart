@@ -468,11 +468,9 @@ export default function TutorChatPage() {
         </button>
       )}
 
-      {/* INPUT DOCK */}
-      <div
-        className="fixed left-1/2 -translate-x-1/2 w-full max-w-md bg-background/95 backdrop-blur-xl border-t border-border z-40"
-        style={{ bottom: "calc(var(--bottom-nav-h, 64px) + 4px)" }}
-      >
+      {/* INPUT DOCK — anchored within flex layout so it never moves while scrolling */}
+      <div className="shrink-0 bg-background/95 backdrop-blur-xl border-t border-border z-40 safe-bottom">
+
         {lastIsAssistant && !sending && (
           <div className="px-3 pt-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
             {suggestions.map((a) => (
