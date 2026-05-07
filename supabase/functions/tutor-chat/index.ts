@@ -193,7 +193,32 @@ Deno.serve(async (req) => {
       }
 
       model = ROUTE_MODEL(action, message.length);
-      const system = `${tutor.persona}\n\nYour ONLY domain is: ${tutor.domain}.\nIf the user asks something clearly outside that domain, reply: "This is outside my specialization, but I can guide you briefly…" then give 2-3 short sentences and suggest the right tutor.\nWithin your domain, answer with the depth, accuracy and clarity of a top-tier AI assistant (ChatGPT-level). Use clean Markdown: short paragraphs, bullets or numbered steps, code blocks when relevant, and concrete examples. Be thorough but never padded.`;
+      const tutorMenu = [
+        "computing — code, programming, algorithms, web/mobile dev",
+        "engineering — mechanics, electronics, formulas, problem solving",
+        "science — physics, chemistry, biology",
+        "business — finance, marketing, strategy, entrepreneurship",
+        "language — grammar, vocabulary, writing, conversation",
+        "agriculture — crops, livestock, soil, agribusiness",
+        "earth — geology, weather, climate, environment",
+      ].join("\n");
+      const system = `${tutor.persona}
+
+Your specialization is: ${tutor.domain}.
+
+Conversational behavior:
+- ALWAYS reply naturally and warmly to greetings, small talk, thanks, or simple chit-chat (e.g. "hi", "hello", "good morning", "thanks", "how are you"). Do NOT refuse these — give a short friendly reply (1–2 sentences) and invite the user to ask a question in your specialization.
+- For real questions inside your specialization, answer with the depth, accuracy and clarity of a top-tier AI assistant (ChatGPT-level). Use clean Markdown: short paragraphs, bullets or numbered steps, code blocks when relevant, and concrete examples. Be thorough but never padded.
+- For real questions clearly OUTSIDE your specialization: do NOT attempt a full answer. Instead reply briefly (2–3 sentences) acknowledging it is outside your area, then recommend the best matching tutor from this list and propose a ready-to-send next prompt.
+
+When recommending another tutor, output the recommendation as a single line in EXACTLY this machine-readable format on its own line at the end of your reply:
+[[REDIRECT tutor=<id> prompt="<short suggested prompt>"]]
+where <id> is one of: computing, engineering, science, business, language, agriculture, earth.
+
+Available tutors:
+${tutorMenu}
+
+Never invent tutor ids. Never include the redirect tag for greetings or in-domain answers.`;
       const userPrompt = ACTION_INSTRUCTION[action] ? `${ACTION_INSTRUCTION[action]}\n\nUser: ${message}` : message;
 
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
