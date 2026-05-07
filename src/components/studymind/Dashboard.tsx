@@ -55,12 +55,11 @@ const initialsOf = (name: string) =>
 export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
   const navigate = useNavigate();
   const { unread } = useNotifications();
-  const [profile, setProfile] = useState<Profile | null>(() => {
-    try {
-      const raw = localStorage.getItem("studymind-profile-cache");
-      return raw ? (JSON.parse(raw) as Profile) : null;
-    } catch { return null; }
-  });
+  // Note: cached profile is intentionally NOT used as initial state — it caused
+  // a stale/old profile to flash after sign-out/sign-in or version updates.
+  // We always fetch fresh on mount; cache is written but only read after we
+  // confirm it belongs to the current user (see effect below).
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [coursesCount, setCoursesCount] = useState(0);
   const [weakAreasCount, setWeakAreasCount] = useState(0);
   const [streak, setStreak] = useState(0);
