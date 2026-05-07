@@ -1651,7 +1651,7 @@ const EmailPreferencesScreen = ({ onBack }: { onBack: () => void }) => {
     setSaving(true);
     const { data: { user } } = await getCurrentUser();
     if (!user) { setSaving(false); return; }
-    const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+    const { error } = await supabase.from("profiles").upsert({ id: user.id, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" });
     setSaving(false);
     if (error) toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
     else window.dispatchEvent(new CustomEvent("profile-updated"));
