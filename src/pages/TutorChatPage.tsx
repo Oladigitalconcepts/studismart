@@ -349,10 +349,7 @@ export default function TutorChatPage() {
         onScroll={onScroll}
         className="flex-1 overflow-y-auto momentum-scroll"
       >
-        <div
-          className="mx-auto max-w-md px-4 pt-5 space-y-5"
-          style={{ paddingBottom: "calc(var(--bottom-nav-h, 64px) + 96px)" }}
-        >
+        <div className="mx-auto max-w-md px-4 pt-5 pb-6 space-y-5">
           {messages.length === 0 && (
             <div className="flex flex-col items-center text-center pt-6 animate-fade-in">
               <div className={cn("h-16 w-16 rounded-2xl flex items-center justify-center shadow-md mb-3", tutor.accent)}>
