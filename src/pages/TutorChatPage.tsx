@@ -311,8 +311,8 @@ export default function TutorChatPage() {
 
   return (
     <div
-      className="fixed inset-x-0 top-0 mx-auto w-full max-w-md flex flex-col bg-background z-20"
-      style={{ bottom: "var(--bottom-nav-h, 64px)" }}
+      className="fixed inset-x-0 top-0 bottom-0 mx-auto w-full max-w-md flex flex-col bg-background z-20"
+      style={{ height: "calc(100dvh - var(--bottom-nav-h, 64px))" }}
     >
       <StatusBar tone="background" />
 
@@ -357,7 +357,7 @@ export default function TutorChatPage() {
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="flex-1 overflow-y-auto momentum-scroll"
+        className="flex-1 min-h-0 overflow-y-auto momentum-scroll"
       >
         <div className="mx-auto max-w-md px-4 pt-5 pb-6 space-y-5">
           {messages.length === 0 && (
