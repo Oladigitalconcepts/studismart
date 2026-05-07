@@ -1007,13 +1007,21 @@ const EditProfileScreen = ({
         course_code: course.trim() ? course.trim() : null,
         updated_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+      const { data: saved, error } = await supabase
+        .from("profiles")
+        .upsert(payload, { onConflict: "id" })
+        .select("display_name, course_code")
+        .single();
       if (error) {
         setStatus("error");
         setErrors((e) => ({ ...e, form: error.message }));
         return;
       }
-      savedRef.current = { name, course };
+      const persistedName = saved?.display_name ?? name.trim();
+      const persistedCourse = saved?.course_code ?? "";
+      setDisplayName(persistedName);
+      setCourseCode(persistedCourse);
+      savedRef.current = { name: persistedName, course: persistedCourse };
       setErrors((e) => ({ ...e, form: undefined }));
       setStatus("saved");
       window.dispatchEvent(new CustomEvent("profile-updated"));
