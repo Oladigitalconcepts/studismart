@@ -252,6 +252,16 @@ export default function TutorChatPage() {
     setHistoryOpen(false);
   };
 
+  const deleteChat = async (id: string) => {
+    if (!confirm("Delete this chat? This cannot be undone.")) return;
+    await supabase.from("tutor_messages").delete().eq("chat_id", id);
+    await supabase.from("tutor_chats").delete().eq("id", id);
+    haptic("light");
+    if (id === chatId) newChat();
+    setHistory((h) => h.filter((c) => c.id !== id));
+    toast({ title: "Chat deleted" });
+  };
+
   // ---- Voice input ----
   const toggleVoice = () => {
     if (!SR) {
