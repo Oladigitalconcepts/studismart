@@ -74,9 +74,25 @@ export const PullToRefresh = ({
   // Touch handlers attached to window so they catch pulls anywhere on screen.
   useEffect(() => {
     if (disabled) return;
+    const findScrollableAncestor = (node: EventTarget | null): HTMLElement | null => {
+      let el = node as HTMLElement | null;
+      while (el && el !== document.body && el !== document.documentElement) {
+        const s = getComputedStyle(el);
+        const oy = s.overflowY;
+        if ((oy === "auto" || oy === "scroll" || oy === "overlay") && el.scrollHeight > el.clientHeight) {
+          return el;
+        }
+        el = el.parentElement;
+      }
+      return null;
+    };
     const onStart = (e: TouchEvent) => {
       if (refreshingRef.current) return;
       if (window.scrollY > 0) return;
+      // If the touch is inside an inner scroll container that's not at the top,
+      // let it scroll normally — don't hijack as pull-to-refresh.
+      const inner = findScrollableAncestor(e.target);
+      if (inner && inner.scrollTop > 0) return;
       startY.current = e.touches[0].clientY;
       pullingRef.current = true;
     };
