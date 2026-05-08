@@ -88,7 +88,7 @@ export const Materials = ({ onUpload, onOpenPack }: Props) => {
   }, []);
 
   const toggleFavorite = (id: string) => {
-    tryHaptic("selection");
+    tryHaptic("light");
     setFavorites((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
