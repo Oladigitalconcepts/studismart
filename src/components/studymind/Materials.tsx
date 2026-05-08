@@ -19,7 +19,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { triggerHaptic } from "@/lib/haptics";
+import { haptic } from "@/lib/haptics";
 
 interface Props {
   onUpload: () => void;
@@ -47,8 +47,8 @@ const fileIconFor = (sourceType?: string) => {
   return FileText;
 };
 
-const tryHaptic = (kind: "selection" | "success" = "selection") => {
-  try { triggerHaptic?.(kind as any); } catch { /* noop */ }
+const tryHaptic = (kind: "light" | "success" = "light") => {
+  try { haptic(kind as any); } catch { /* noop */ }
 };
 
 export const Materials = ({ onUpload, onOpenPack }: Props) => {
