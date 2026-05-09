@@ -11,6 +11,7 @@ import { cacheGet, cacheSet } from "@/lib/offlineCache";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
+import { getTopicContent, setTopicContent } from "@/lib/topicCache";
 
 interface Props {
   studyPackId: string | null;
