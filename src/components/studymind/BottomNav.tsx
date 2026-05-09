@@ -1,4 +1,4 @@
-import { Home, BookOpen, Bot, GraduationCap, User } from "lucide-react";
+import { Home, BookOpen, Bot, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
