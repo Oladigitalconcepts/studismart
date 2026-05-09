@@ -38,6 +38,16 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { getTopicContent, setTopicContent } from "@/lib/topicCache";
+
+type TopicStatus = "pending" | "cached" | "generating" | "done" | "failed";
+interface TopicProgress {
+  topic: string;
+  status: TopicStatus;
+  error?: string;
+}
 
 interface Slide {
   type: "title" | "content" | "summary";
