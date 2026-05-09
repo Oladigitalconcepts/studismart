@@ -9,7 +9,6 @@ const tabs: { id: Screen; label: string; icon: typeof Home; path: string }[] = [
   { id: "home", label: "Home", icon: Home, path: "/home" },
   { id: "materials", label: "Materials", icon: BookOpen, path: "/materials" },
   { id: "tutor", label: "AI Tutor", icon: Bot, path: "/tutor" },
-  { id: "skills", label: "Skills", icon: GraduationCap, path: "/skills" },
   { id: "profile", label: "Profile", icon: User, path: "/profile" },
 ];
 
@@ -33,7 +32,7 @@ export const BottomNav = () => {
         ["--bottom-nav-h" as any]: "calc(64px + env(safe-area-inset-bottom, 0px))",
       }}
     >
-      <div className="grid grid-cols-5 h-16 relative">
+      <div className="grid grid-cols-4 h-16 relative">
         {tabs.map(({ id, label, icon: Icon, path }) => {
           const isActive = activeId === id;
           return (
