@@ -26,7 +26,8 @@ export type AnalyticsEvent =
   | "slides_viewed"
   | "slides_edited"
   | "slides_exported"
-  | "study_plan_viewed";
+  | "study_plan_viewed"
+  | "topic_summaries_exported";
 
 interface EventRecord {
   event: AnalyticsEvent;
