@@ -240,7 +240,7 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
       const content = (data as any)?.content as string;
       if (content) {
         setTopicContent((prev) => ({ ...prev, [name]: content }));
-        setTopicContent_persist(pack.id, name, content);
+        persistTopicContent(pack.id, name, content);
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't generate topic content");
@@ -250,6 +250,3 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
     }
   }
 };
-
-// Aliased to avoid name collision with the React state setter.
-const setTopicContent_persist = setTopicContent;
