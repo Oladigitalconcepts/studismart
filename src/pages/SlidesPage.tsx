@@ -773,6 +773,77 @@ const SlidesPage = () => {
           )}
         </>
       )}
+
+      <Dialog
+        open={progressOpen}
+        onOpenChange={(o) => {
+          // Only allow closing once the export is finished.
+          if (!o && exporting !== "topics") setProgressOpen(false);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {exporting === "topics" ? (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              ) : (
+                <Check className="h-5 w-5 text-primary" />
+              )}
+              Generating topic summaries
+            </DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const total = topicProgress.length;
+            const done = topicProgress.filter(
+              (p) => p.status === "done" || p.status === "cached" || p.status === "failed",
+            ).length;
+            const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+            return (
+              <div className="space-y-3 mt-2">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {done} of {total} topic{total === 1 ? "" : "s"}
+                    </span>
+                    <span>{pct}%</span>
+                  </div>
+                  <Progress value={pct} className="h-2" />
+                </div>
+                <ul className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                  {topicProgress.map((p, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 text-sm rounded-lg px-2 py-1.5 bg-secondary/40"
+                    >
+                      {p.status === "done" || p.status === "cached" ? (
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                      ) : p.status === "failed" ? (
+                        <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                      ) : p.status === "generating" ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border border-muted-foreground/30 shrink-0" />
+                      )}
+                      <span className="flex-1 truncate">{p.topic}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {p.status === "cached" ? "cached" : p.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {exporting !== "topics" && (
+                  <Button
+                    onClick={() => setProgressOpen(false)}
+                    className="w-full h-10 rounded-xl gradient-primary font-semibold"
+                  >
+                    Done
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
