@@ -331,6 +331,124 @@ const SlidesPage = () => {
     }
   };
 
+  const exportTopicSummaries = async () => {
+    if (!packId) return;
+    setExporting("topics");
+    try {
+      const { data: pack } = await supabase
+        .from("study_packs")
+        .select("id, summary, topics, materials(title)")
+        .eq("id", packId)
+        .maybeSingle();
+      const topics: { name: string }[] = Array.isArray((pack as any)?.topics)
+        ? (pack as any).topics
+        : [];
+      if (!topics.length) {
+        toast({ title: "No topics found for this pack", variant: "destructive" });
+        return;
+      }
+      const materialTitle = (pack as any)?.materials?.title ?? deck?.title ?? "Study Pack";
+
+      toast({ title: `Generating ${topics.length} topic summaries…` });
+
+      const sections: { topic: string; content: string }[] = [];
+      for (const t of topics) {
+        try {
+          const { data, error } = await supabase.functions.invoke("generate-topic-content", {
+            body: { study_pack_id: packId, topic: t.name },
+          });
+          if (error) throw error;
+          sections.push({
+            topic: t.name,
+            content: ((data as any)?.content as string) ?? "(no content)",
+          });
+        } catch (e: any) {
+          sections.push({ topic: t.name, content: `(failed: ${e?.message ?? "error"})` });
+        }
+      }
+
+      const { jsPDF } = await import("jspdf");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 48;
+      const maxW = pageW - margin * 2;
+
+      // Cover
+      pdf.setFillColor(99, 102, 241);
+      pdf.rect(0, 0, pageW, 8, "F");
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(17, 24, 39);
+      pdf.setFontSize(26);
+      pdf.text(pdf.splitTextToSize(materialTitle, maxW), margin, 120);
+      pdf.setFontSize(14);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(107, 114, 128);
+      pdf.text("Topic-by-topic study summary", margin, 150);
+      pdf.setFontSize(11);
+      pdf.text(new Date().toLocaleDateString(), margin, 170);
+
+      // TOC
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(13);
+      pdf.setTextColor(17, 24, 39);
+      pdf.text("Contents", margin, 220);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(11);
+      let tocY = 244;
+      sections.forEach((s, i) => {
+        if (tocY > pageH - margin) {
+          pdf.addPage();
+          tocY = margin + 20;
+        }
+        pdf.setTextColor(31, 41, 55);
+        pdf.text(`${i + 1}. ${s.topic}`, margin, tocY);
+        tocY += 18;
+      });
+
+      // Sections
+      sections.forEach((s, i) => {
+        pdf.addPage();
+        pdf.setFillColor(99, 102, 241);
+        pdf.rect(margin, margin, 36, 4, "F");
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(18);
+        pdf.setTextColor(17, 24, 39);
+        const titleLines = pdf.splitTextToSize(`${i + 1}. ${s.topic}`, maxW);
+        pdf.text(titleLines, margin, margin + 30);
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(11);
+        pdf.setTextColor(31, 41, 55);
+        const bodyLines = pdf.splitTextToSize(s.content, maxW);
+        let y = margin + 30 + titleLines.length * 22 + 14;
+        const lineH = 16;
+        bodyLines.forEach((line: string) => {
+          if (y > pageH - margin) {
+            pdf.addPage();
+            y = margin + 20;
+          }
+          pdf.text(line, margin, y);
+          y += lineH;
+        });
+
+        // Footer
+        pdf.setFontSize(9);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text(materialTitle, margin, pageH - 24);
+      });
+
+      const fname = `${materialTitle.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "topics"}-summaries.pdf`;
+      pdf.save(fname);
+      track("topic_summaries_exported", { study_pack_id: packId, topics: sections.length });
+      toast({ title: "Topic summaries downloaded" });
+    } catch (e: any) {
+      toast({ title: e?.message ?? "Export failed", variant: "destructive" });
+    } finally {
+      setExporting(null);
+    }
+  };
+
   // ───────── Study plan ─────────
   const planDays = useMemo(
     () => (Array.isArray(deck?.study_plan) ? deck!.study_plan! : []),
