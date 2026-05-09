@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowLeft,
   CalendarDays,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -36,6 +38,16 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { getTopicContent, setTopicContent } from "@/lib/topicCache";
+
+type TopicStatus = "pending" | "cached" | "generating" | "done" | "failed";
+interface TopicProgress {
+  topic: string;
+  status: TopicStatus;
+  error?: string;
+}
 
 interface Slide {
   type: "title" | "content" | "summary";
@@ -70,6 +82,8 @@ const SlidesPage = () => {
   const [draft, setDraft] = useState<Slide | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState<null | "pdf" | "pptx" | "topics">(null);
+  const [topicProgress, setTopicProgress] = useState<TopicProgress[]>([]);
+  const [progressOpen, setProgressOpen] = useState(false);
 
   const load = async (force = false) => {
     if (!packId) return;
@@ -334,6 +348,7 @@ const SlidesPage = () => {
   const exportTopicSummaries = async () => {
     if (!packId) return;
     setExporting("topics");
+    setProgressOpen(true);
     try {
       const { data: pack } = await supabase
         .from("study_packs")
@@ -345,25 +360,50 @@ const SlidesPage = () => {
         : [];
       if (!topics.length) {
         toast({ title: "No topics found for this pack", variant: "destructive" });
+        setProgressOpen(false);
         return;
       }
       const materialTitle = (pack as any)?.materials?.title ?? deck?.title ?? "Study Pack";
 
-      toast({ title: `Generating ${topics.length} topic summaries…` });
+      // Seed progress: mark each topic pending or cached up-front.
+      const initial: TopicProgress[] = topics.map((t) => {
+        const cached = getTopicContent(packId, t.name);
+        return { topic: t.name, status: cached ? "cached" : "pending" };
+      });
+      setTopicProgress(initial);
 
       const sections: { topic: string; content: string }[] = [];
-      for (const t of topics) {
+      for (let i = 0; i < topics.length; i++) {
+        const t = topics[i];
+        const cached = getTopicContent(packId, t.name);
+        if (cached) {
+          sections.push({ topic: t.name, content: cached });
+          setTopicProgress((prev) =>
+            prev.map((p, j) => (j === i ? { ...p, status: "done" } : p)),
+          );
+          continue;
+        }
+        setTopicProgress((prev) =>
+          prev.map((p, j) => (j === i ? { ...p, status: "generating" } : p)),
+        );
         try {
           const { data, error } = await supabase.functions.invoke("generate-topic-content", {
             body: { study_pack_id: packId, topic: t.name },
           });
           if (error) throw error;
-          sections.push({
-            topic: t.name,
-            content: ((data as any)?.content as string) ?? "(no content)",
-          });
+          const content = ((data as any)?.content as string) ?? "";
+          if (!content) throw new Error("Empty response");
+          setTopicContent(packId, t.name, content);
+          sections.push({ topic: t.name, content });
+          setTopicProgress((prev) =>
+            prev.map((p, j) => (j === i ? { ...p, status: "done" } : p)),
+          );
         } catch (e: any) {
-          sections.push({ topic: t.name, content: `(failed: ${e?.message ?? "error"})` });
+          const msg = e?.message ?? "error";
+          sections.push({ topic: t.name, content: `(failed: ${msg})` });
+          setTopicProgress((prev) =>
+            prev.map((p, j) => (j === i ? { ...p, status: "failed", error: msg } : p)),
+          );
         }
       }
 
@@ -440,8 +480,17 @@ const SlidesPage = () => {
 
       const fname = `${materialTitle.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "topics"}-summaries.pdf`;
       pdf.save(fname);
-      track("topic_summaries_exported", { study_pack_id: packId, topics: sections.length });
-      toast({ title: "Topic summaries downloaded" });
+      const failed = sections.filter((s) => s.content.startsWith("(failed:")).length;
+      track("topic_summaries_exported", {
+        study_pack_id: packId,
+        topics: sections.length,
+        failed,
+      });
+      toast({
+        title: failed
+          ? `Downloaded with ${failed} failed topic${failed === 1 ? "" : "s"}`
+          : "Topic summaries downloaded",
+      });
     } catch (e: any) {
       toast({ title: e?.message ?? "Export failed", variant: "destructive" });
     } finally {
@@ -724,6 +773,77 @@ const SlidesPage = () => {
           )}
         </>
       )}
+
+      <Dialog
+        open={progressOpen}
+        onOpenChange={(o) => {
+          // Only allow closing once the export is finished.
+          if (!o && exporting !== "topics") setProgressOpen(false);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {exporting === "topics" ? (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              ) : (
+                <Check className="h-5 w-5 text-primary" />
+              )}
+              Generating topic summaries
+            </DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const total = topicProgress.length;
+            const done = topicProgress.filter(
+              (p) => p.status === "done" || p.status === "cached" || p.status === "failed",
+            ).length;
+            const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+            return (
+              <div className="space-y-3 mt-2">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {done} of {total} topic{total === 1 ? "" : "s"}
+                    </span>
+                    <span>{pct}%</span>
+                  </div>
+                  <Progress value={pct} className="h-2" />
+                </div>
+                <ul className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                  {topicProgress.map((p, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 text-sm rounded-lg px-2 py-1.5 bg-secondary/40"
+                    >
+                      {p.status === "done" || p.status === "cached" ? (
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                      ) : p.status === "failed" ? (
+                        <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                      ) : p.status === "generating" ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border border-muted-foreground/30 shrink-0" />
+                      )}
+                      <span className="flex-1 truncate">{p.topic}</span>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {p.status === "cached" ? "cached" : p.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {exporting !== "topics" && (
+                  <Button
+                    onClick={() => setProgressOpen(false)}
+                    className="w-full h-10 rounded-xl gradient-primary font-semibold"
+                  >
+                    Done
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

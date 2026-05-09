@@ -11,6 +11,7 @@ import { cacheGet, cacheSet } from "@/lib/offlineCache";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
+import { getTopicContent, setTopicContent as persistTopicContent } from "@/lib/topicCache";
 
 interface Props {
   studyPackId: string | null;
@@ -222,6 +223,14 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
     haptic("light");
     setOpenTopic(name);
     if (topicContent[name] || !pack?.id) return;
+
+    // Try the local cache first so we never re-generate the same topic.
+    const cached = getTopicContent(pack.id, name);
+    if (cached) {
+      setTopicContent((prev) => ({ ...prev, [name]: cached }));
+      return;
+    }
+
     setTopicLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-topic-content", {
@@ -229,7 +238,10 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
       });
       if (error) throw error;
       const content = (data as any)?.content as string;
-      if (content) setTopicContent((prev) => ({ ...prev, [name]: content }));
+      if (content) {
+        setTopicContent((prev) => ({ ...prev, [name]: content }));
+        persistTopicContent(pack.id, name, content);
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't generate topic content");
       setOpenTopic(null);
