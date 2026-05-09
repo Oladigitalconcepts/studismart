@@ -82,6 +82,8 @@ const SlidesPage = () => {
   const [draft, setDraft] = useState<Slide | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState<null | "pdf" | "pptx" | "topics">(null);
+  const [topicProgress, setTopicProgress] = useState<TopicProgress[]>([]);
+  const [progressOpen, setProgressOpen] = useState(false);
 
   const load = async (force = false) => {
     if (!packId) return;
