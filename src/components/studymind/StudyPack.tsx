@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bookmark, ChevronRight, FileQuestion, Presentation } from "lucide-react";
+import { ArrowLeft, Bookmark, Loader2, Presentation, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBar } from "./StatusBar";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/lib/authUser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cacheGet, cacheSet } from "@/lib/offlineCache";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
 
 interface Props {
   studyPackId: string | null;
@@ -23,7 +26,10 @@ interface CachedPack {
 
 export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"summary" | "topics" | "questions">("summary");
+  const [tab, setTab] = useState<"summary" | "topics">("summary");
+  const [openTopic, setOpenTopic] = useState<string | null>(null);
+  const [topicContent, setTopicContent] = useState<Record<string, string>>({});
+  const [topicLoading, setTopicLoading] = useState(false);
   const cacheName = `studypack:${studyPackId ?? "latest"}`;
   const initial = cacheGet<CachedPack>(null, cacheName);
   const [pack, setPack] = useState<any | null>(initial?.pack ?? null);
@@ -125,8 +131,8 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
       </header>
 
       <div className="px-5 mt-2">
-        <div className="bg-secondary p-1 rounded-2xl grid grid-cols-3 gap-1">
-          {(["summary", "topics", "questions"] as const).map((t) => (
+        <div className="bg-secondary p-1 rounded-2xl grid grid-cols-2 gap-1">
+          {(["summary", "topics"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -156,16 +162,21 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
           <div className="rounded-2xl bg-card border border-border p-4 text-sm leading-relaxed whitespace-pre-wrap">
             {pack.summary || "No summary available."}
           </div>
-        ) : tab === "topics" ? (
+        ) : (
           <div className="space-y-2">
             {topics.length === 0 && <p className="text-sm text-muted-foreground">No topics extracted.</p>}
             {topics.map((t, i) => (
-              <div key={i} className="w-full p-4 rounded-2xl flex items-center gap-3 bg-card border border-border">
+              <button
+                key={i}
+                onClick={() => openTopicSheet(t.name)}
+                className="w-full p-4 rounded-2xl flex items-center gap-3 bg-card border border-border tap-scale text-left hover:border-primary/40 transition-colors"
+              >
                 <div className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold gradient-primary text-white shrink-0">
                   {i + 1}
                 </div>
                 <span className="flex-1 text-sm font-medium">{t.name}</span>
-              </div>
+                <Sparkles className="h-4 w-4 text-primary shrink-0" />
+              </button>
             ))}
             {pack && topics.length > 0 && (
               <Button
@@ -177,32 +188,53 @@ export const StudyPack = ({ studyPackId, onBack, onPractice }: Props) => {
               </Button>
             )}
           </div>
-        ) : (
-          <div className="space-y-3">
-            <button
-              onClick={() => pack && onPractice(pack.id)}
-              disabled={questionCount === 0}
-              className="w-full p-4 rounded-2xl bg-card border border-border flex items-center gap-3 tap-scale text-left disabled:opacity-50"
-            >
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
-                <FileQuestion className="h-6 w-6" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm">Multiple Choice</p>
-                <p className="text-xs text-muted-foreground">{questionCount} questions</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
-            <Button
-              onClick={() => pack && onPractice(pack.id)}
-              disabled={questionCount === 0}
-              className="w-full h-12 rounded-2xl gradient-primary tap-scale font-semibold"
-            >
-              Start Practice
-            </Button>
-          </div>
         )}
       </div>
+
+      <Sheet open={!!openTopic} onOpenChange={(o) => !o && setOpenTopic(null)}>
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2 text-left">
+              <Sparkles className="h-5 w-5 text-primary" />
+              {openTopic}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 pb-8">
+            {topicLoading ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <p className="text-xs text-muted-foreground">Generating explanation…</p>
+              </div>
+            ) : openTopic && topicContent[openTopic] ? (
+              <div className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+                {topicContent[openTopic]}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No content yet.</p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
+
+  async function openTopicSheet(name: string) {
+    haptic("light");
+    setOpenTopic(name);
+    if (topicContent[name] || !pack?.id) return;
+    setTopicLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-topic-content", {
+        body: { study_pack_id: pack.id, topic: name },
+      });
+      if (error) throw error;
+      const content = (data as any)?.content as string;
+      if (content) setTopicContent((prev) => ({ ...prev, [name]: content }));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Couldn't generate topic content");
+      setOpenTopic(null);
+    } finally {
+      setTopicLoading(false);
+    }
+  }
 };
