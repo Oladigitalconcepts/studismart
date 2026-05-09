@@ -69,7 +69,7 @@ const SlidesPage = () => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Slide | null>(null);
   const [saving, setSaving] = useState(false);
-  const [exporting, setExporting] = useState<null | "pdf" | "pptx">(null);
+  const [exporting, setExporting] = useState<null | "pdf" | "pptx" | "topics">(null);
 
   const load = async (force = false) => {
     if (!packId) return;
@@ -416,10 +416,13 @@ const SlidesPage = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={exportPdf}>
-                <FileText className="h-4 w-4 mr-2" /> Download as PDF
+                <FileText className="h-4 w-4 mr-2" /> Slides as PDF
               </DropdownMenuItem>
               <DropdownMenuItem onClick={exportPptx}>
-                <Presentation className="h-4 w-4 mr-2" /> Download as PowerPoint
+                <Presentation className="h-4 w-4 mr-2" /> Slides as PowerPoint
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportTopicSummaries}>
+                <FileText className="h-4 w-4 mr-2" /> Topic summaries (PDF)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
