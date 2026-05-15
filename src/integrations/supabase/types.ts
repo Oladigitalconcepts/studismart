@@ -130,35 +130,56 @@ export type Database = {
       materials: {
         Row: {
           created_at: string
+          duration_seconds: number | null
           error: string | null
           id: string
+          is_favorite: boolean
+          last_opened_at: string | null
+          notebook_id: string | null
           raw_text: string | null
           source_type: string
           status: string
           storage_path: string | null
+          tags: string[]
           title: string
+          transcript: string | null
+          transcript_segments: Json | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          duration_seconds?: number | null
           error?: string | null
           id?: string
+          is_favorite?: boolean
+          last_opened_at?: string | null
+          notebook_id?: string | null
           raw_text?: string | null
           source_type: string
           status?: string
           storage_path?: string | null
+          tags?: string[]
           title: string
+          transcript?: string | null
+          transcript_segments?: Json | null
           user_id: string
         }
         Update: {
           created_at?: string
+          duration_seconds?: number | null
           error?: string | null
           id?: string
+          is_favorite?: boolean
+          last_opened_at?: string | null
+          notebook_id?: string | null
           raw_text?: string | null
           source_type?: string
           status?: string
           storage_path?: string | null
+          tags?: string[]
           title?: string
+          transcript?: string | null
+          transcript_segments?: Json | null
           user_id?: string
         }
         Relationships: []
@@ -186,6 +207,137 @@ export type Database = {
           day?: string
           id?: string
           mission_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notebook_chats: {
+        Row: {
+          created_at: string
+          id: string
+          notebook_id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notebook_id: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notebook_id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notebook_guides: {
+        Row: {
+          faqs: Json
+          generated_at: string
+          glossary: Json
+          id: string
+          notebook_id: string
+          summary: string
+          topics: Json
+          user_id: string
+        }
+        Insert: {
+          faqs?: Json
+          generated_at?: string
+          glossary?: Json
+          id?: string
+          notebook_id: string
+          summary?: string
+          topics?: Json
+          user_id: string
+        }
+        Update: {
+          faqs?: Json
+          generated_at?: string
+          glossary?: Json
+          id?: string
+          notebook_id?: string
+          summary?: string
+          topics?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notebook_messages: {
+        Row: {
+          chat_id: string
+          citations: Json
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          citations?: Json
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          citations?: Json
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebooks: {
+        Row: {
+          color: string
+          course_code: string | null
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          course_code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          course_code?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
