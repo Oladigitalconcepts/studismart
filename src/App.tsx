@@ -14,6 +14,7 @@ import PracticePage from "./pages/PracticePage";
 import ExamFocusPage from "./pages/ExamFocusPage";
 import ProfilePage from "./pages/ProfilePage";
 import MaterialsPage from "./pages/MaterialsPage";
+import NotebookPage from "./pages/NotebookPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
