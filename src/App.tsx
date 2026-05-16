@@ -14,6 +14,7 @@ import PracticePage from "./pages/PracticePage";
 import ExamFocusPage from "./pages/ExamFocusPage";
 import ProfilePage from "./pages/ProfilePage";
 import MaterialsPage from "./pages/MaterialsPage";
+import NotebookPage from "./pages/NotebookPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/practice/:packId" element={<PracticePage />} />
             <Route path="/exam-focus" element={<ExamFocusPage />} />
             <Route path="/materials" element={<MaterialsPage />} />
+            <Route path="/notebook/:notebookId" element={<NotebookPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
