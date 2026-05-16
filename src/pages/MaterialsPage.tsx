@@ -1,14 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { Materials } from "@/components/studymind/Materials";
+import { LibraryHome } from "@/components/studymind/library/LibraryHome";
 
-const MaterialsPage = () => {
-  const navigate = useNavigate();
-  return (
-    <Materials
-      onUpload={() => navigate("/upload")}
-      onOpenPack={(packId) => navigate(`/studypack/${packId}`)}
-    />
-  );
-};
+const MaterialsPage = () => <LibraryHome />;
 
 export default MaterialsPage;
