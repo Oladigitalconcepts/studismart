@@ -53,6 +53,7 @@ const App = () => (
             <Route path="/practice/:packId" element={<PracticePage />} />
             <Route path="/exam-focus" element={<ExamFocusPage />} />
             <Route path="/materials" element={<MaterialsPage />} />
+            <Route path="/notebook/:notebookId" element={<NotebookPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
