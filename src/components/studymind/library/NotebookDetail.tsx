@@ -179,6 +179,12 @@ export const NotebookDetail = () => {
         notebookId={notebook.id}
         onAdded={() => { setAddOpen(false); refresh(); }}
       />
+
+      <AudioPlayerSheet
+        open={!!audioMaterialId}
+        onOpenChange={(o) => { if (!o) setAudioMaterialId(null); }}
+        materialId={audioMaterialId}
+      />
     </div>
   );
 };
