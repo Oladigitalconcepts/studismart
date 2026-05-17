@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { AddSourceSheet } from "./AddSourceSheet";
 import { NotebookChat } from "./NotebookChat";
 import { StudyGuideTab } from "./StudyGuideTab";
+import { AudioPlayerSheet } from "./AudioPlayerSheet";
 
 const fileIconFor = (sourceType?: string) => {
   if (sourceType === "image") return ImageIcon;
@@ -32,6 +33,7 @@ export const NotebookDetail = () => {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [tab, setTab] = useState("sources");
+  const [audioMaterialId, setAudioMaterialId] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
 
   const refresh = async () => {
@@ -131,7 +133,15 @@ export const NotebookDetail = () => {
                 return (
                   <button
                     key={m.id}
-                    onClick={() => packId ? navigate(`/studypack/${packId}`) : toast.info("This source is still processing")}
+                    onClick={() => {
+                      if (m.source_type === "audio") {
+                        if (m.status === "ready") setAudioMaterialId(m.id);
+                        else toast.info("Audio is still transcribing");
+                        return;
+                      }
+                      if (packId) navigate(`/studypack/${packId}`);
+                      else toast.info("This source is still processing");
+                    }}
                     className="w-full p-3 rounded-2xl bg-card border border-border flex items-center gap-3 text-left tap-scale"
                   >
                     <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
@@ -168,6 +178,12 @@ export const NotebookDetail = () => {
         onOpenChange={setAddOpen}
         notebookId={notebook.id}
         onAdded={() => { setAddOpen(false); refresh(); }}
+      />
+
+      <AudioPlayerSheet
+        open={!!audioMaterialId}
+        onOpenChange={(o) => { if (!o) setAudioMaterialId(null); }}
+        materialId={audioMaterialId}
       />
     </div>
   );
