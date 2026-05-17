@@ -33,6 +33,7 @@ export const NotebookDetail = () => {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [tab, setTab] = useState("sources");
+  const [audioMaterialId, setAudioMaterialId] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
 
   const refresh = async () => {
