@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { AddSourceSheet } from "./AddSourceSheet";
 import { NotebookChat } from "./NotebookChat";
 import { StudyGuideTab } from "./StudyGuideTab";
+import { AudioPlayerSheet } from "./AudioPlayerSheet";
 
 const fileIconFor = (sourceType?: string) => {
   if (sourceType === "image") return ImageIcon;
