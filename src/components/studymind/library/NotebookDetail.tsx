@@ -133,7 +133,15 @@ export const NotebookDetail = () => {
                 return (
                   <button
                     key={m.id}
-                    onClick={() => packId ? navigate(`/studypack/${packId}`) : toast.info("This source is still processing")}
+                    onClick={() => {
+                      if (m.source_type === "audio") {
+                        if (m.status === "ready") setAudioMaterialId(m.id);
+                        else toast.info("Audio is still transcribing");
+                        return;
+                      }
+                      if (packId) navigate(`/studypack/${packId}`);
+                      else toast.info("This source is still processing");
+                    }}
                     className="w-full p-3 rounded-2xl bg-card border border-border flex items-center gap-3 text-left tap-scale"
                   >
                     <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
