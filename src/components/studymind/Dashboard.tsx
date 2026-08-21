@@ -1,3 +1,4 @@
+import { AvatarImg } from "@/components/studymind/AvatarImg";
 import { useEffect, useState } from "react";
 import {
   Bell, Upload, Sparkles, Target, FileText, ChevronRight, Loader2,
@@ -289,7 +290,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
           <div className="flex items-center gap-3">
             <div className="h-14 w-14 rounded-full gradient-primary flex items-center justify-center text-white font-bold text-lg overflow-hidden flex-shrink-0">
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt={name} className="h-full w-full object-cover" />
+                <AvatarImg value={profile.avatar_url} alt={name} className="h-full w-full object-cover" />
               ) : (
                 <span>{initialsOf(name)}</span>
               )}

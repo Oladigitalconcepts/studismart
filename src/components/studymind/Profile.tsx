@@ -1,3 +1,5 @@
+import { AvatarImg } from "@/components/studymind/AvatarImg";
+import { toAvatarPath } from "@/lib/avatars";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Settings as SettingsIcon, Flame, Award, ChevronRight, BookOpen, Layers, CheckCircle2,
@@ -145,7 +147,7 @@ export const Profile = () => {
         <div className="relative flex items-center gap-4">
           <div className="h-16 w-16 rounded-full bg-white/30 backdrop-blur flex items-center justify-center text-2xl font-bold ring-4 ring-white/20 relative overflow-hidden">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={name || "Profile"} className="absolute inset-0 h-full w-full object-cover" />
+              <AvatarImg value={avatarUrl} alt={name || "Profile"} className="absolute inset-0 h-full w-full object-cover" />
             ) : (
               <span>{initials}</span>
             )}
@@ -917,9 +919,8 @@ const EditProfileScreen = ({
       return;
     }
 
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    // Cache-bust so the new avatar shows immediately.
-    const publicUrl = `${pub.publicUrl}?v=${Date.now()}`;
+    // Private bucket: store the storage path; signed URLs are generated on demand.
+    const publicUrl = path;
 
     const { error: dbError } = await supabase
       .from("profiles")
@@ -951,13 +952,9 @@ const EditProfileScreen = ({
 
     // Best-effort: remove the file too. Extract the storage path from the URL.
     try {
-      const marker = "/avatars/";
-      const idx = avatarUrl.indexOf(marker);
-      if (idx !== -1) {
-        const storagePath = avatarUrl.slice(idx + marker.length).split("?")[0];
-        if (storagePath.startsWith(`${user.id}/`)) {
-          await supabase.storage.from("avatars").remove([storagePath]);
-        }
+      const storagePath = toAvatarPath(avatarUrl);
+      if (storagePath && storagePath.startsWith(`${user.id}/`)) {
+        await supabase.storage.from("avatars").remove([storagePath]);
       }
     } catch { /* noop */ }
 
@@ -1135,7 +1132,7 @@ const EditProfileScreen = ({
             aria-label={avatarUrl ? "Change profile photo" : "Upload profile photo"}
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="Profile" className="absolute inset-0 h-full w-full object-cover" />
+              <AvatarImg value={avatarUrl} alt="Profile" className="absolute inset-0 h-full w-full object-cover" />
             ) : (
               <span>{(displayName || "U").split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase()}</span>
             )}
