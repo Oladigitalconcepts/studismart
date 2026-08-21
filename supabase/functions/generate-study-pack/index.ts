@@ -34,7 +34,7 @@ const STUDY_TOOL = {
         },
         questions: {
           type: "array",
-          minItems: 8,
+          minItems: 1,
           items: {
             type: "object",
             properties: {
@@ -106,62 +106,111 @@ Deno.serve(async (req) => {
       return json({ error: "Material has no readable text. Paste text or upload a TXT file for now." }, 400);
     }
 
-    const trimmed = text.slice(0, 18000);
+    const trimmed = text.slice(0, 60000);
+
+    // Estimate how many non-repetitive questions this material can support.
+    const words = trimmed.split(/\s+/).filter(Boolean).length;
+    const capacity = Math.max(5, Math.min(100, Math.floor(words / 45)));
+
+    const requested = Number(body?.num_questions);
+    const target = Number.isFinite(requested) && requested > 0
+      ? Math.min(Math.round(requested), capacity, 100)
+      : Math.min(15, capacity);
+
+    if (body?.capacity_only) {
+      return json({ capacity, words });
+    }
 
     await admin.from("materials").update({ status: "processing", error: null }).eq("id", materialId);
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert university tutor. Read lecture material and produce a study pack: a concise summary, key points, distinct topics, and high-quality multiple-choice questions with one correct answer and a brief explanation. Keep questions clear and unambiguous.",
-          },
-          {
-            role: "user",
-            content: `Title: ${material.title}\n\n---\n${trimmed}\n---\n\nProduce 10-15 MCQs covering the topics evenly.`,
-          },
-        ],
-        tools: [STUDY_TOOL],
-        tool_choice: { type: "function", function: { name: "build_study_pack" } },
-      }),
-    });
+    const callAI = async (count: number, avoid: string[], wantMeta: boolean) => {
+      const avoidBlock = avoid.length
+        ? `\n\nDo NOT repeat, rephrase or overlap with these existing questions:\n- ${avoid.slice(-60).join("\n- ")}`
+        : "";
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are an expert university tutor. Read lecture material and produce a study pack: a concise summary, key points, distinct topics, and high-quality multiple-choice questions with exactly one correct answer and a brief explanation. Every question must be unique and grounded strictly in the material.",
+            },
+            {
+              role: "user",
+              content: `Title: ${material.title}\n\n---\n${trimmed}\n---\n\nProduce exactly ${count} unique MCQs covering the topics evenly.${avoidBlock}`,
+            },
+          ],
+          tools: [STUDY_TOOL],
+          tool_choice: { type: "function", function: { name: "build_study_pack" } },
+        }),
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        console.error("AI error", resp.status, errText);
+        return { status: resp.status, data: null as any };
+      }
+      const ai = await resp.json();
+      const toolCall = ai?.choices?.[0]?.message?.tool_calls?.[0];
+      if (!toolCall?.function?.arguments) return { status: 502, data: null as any };
+      try {
+        return { status: 200, data: JSON.parse(toolCall.function.arguments) };
+      } catch {
+        return { status: 502, data: null as any };
+      }
+    };
 
-    if (!aiResp.ok) {
-      const errText = await aiResp.text();
-      await admin.from("materials").update({ status: "failed", error: `AI ${aiResp.status}` }).eq("id", materialId);
-      if (aiResp.status === 429) return json({ error: "Rate limit, please try again." }, 429);
-      if (aiResp.status === 402) return json({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }, 402);
-      console.error("AI error", aiResp.status, errText);
+    const BATCH = 25;
+    let summary = "";
+    let keyPoints: string[] = [];
+    let topics: string[] = [];
+    const questions: any[] = [];
+    const seen = new Set<string>();
+    let remaining = target;
+    let firstStatus = 200;
+
+    while (remaining > 0) {
+      const count = Math.min(BATCH, remaining);
+      const { status, data: parsed } = await callAI(
+        count,
+        questions.map((q) => String(q.question ?? "")),
+        questions.length === 0,
+      );
+      if (!parsed) {
+        if (questions.length === 0) {
+          firstStatus = status;
+          break;
+        }
+        break;
+      }
+      if (!summary) summary = parsed.summary ?? "";
+      if (!keyPoints.length && Array.isArray(parsed.key_points)) keyPoints = parsed.key_points;
+      if (!topics.length && Array.isArray(parsed.topics)) topics = parsed.topics;
+      const batchQs: any[] = Array.isArray(parsed.questions) ? parsed.questions : [];
+      let added = 0;
+      for (const q of batchQs) {
+        const key = String(q?.question ?? "").trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        questions.push(q);
+        added++;
+        if (questions.length >= target) break;
+      }
+      remaining = target - questions.length;
+      if (added === 0) break;
+    }
+
+    if (!questions.length) {
+      await admin.from("materials").update({ status: "failed", error: `AI ${firstStatus}` }).eq("id", materialId);
+      if (firstStatus === 429) return json({ error: "Rate limit, please try again." }, 429);
+      if (firstStatus === 402) return json({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }, 402);
       return json({ error: "AI generation failed" }, 500);
     }
-
-    const ai = await aiResp.json();
-    const toolCall = ai?.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
-      await admin.from("materials").update({ status: "failed", error: "Bad AI response" }).eq("id", materialId);
-      return json({ error: "AI returned no structured output" }, 500);
-    }
-
-    let parsed: any;
-    try {
-      parsed = JSON.parse(toolCall.function.arguments);
-    } catch {
-      await admin.from("materials").update({ status: "failed", error: "Invalid JSON" }).eq("id", materialId);
-      return json({ error: "AI returned invalid JSON" }, 500);
-    }
-
-    const summary: string = parsed.summary ?? "";
-    const keyPoints: string[] = Array.isArray(parsed.key_points) ? parsed.key_points : [];
-    const topics: string[] = Array.isArray(parsed.topics) ? parsed.topics : [];
-    const questions: any[] = Array.isArray(parsed.questions) ? parsed.questions : [];
 
     const topicsPayload = topics.map((name) => ({ name, key_points: [] as string[] }));
 
@@ -202,7 +251,7 @@ Deno.serve(async (req) => {
 
     await admin.from("materials").update({ status: "ready", error: null }).eq("id", materialId);
 
-    return json({ study_pack_id: pack.id });
+    return json({ study_pack_id: pack.id, capacity, question_count: questions.length });
   } catch (e) {
     console.error("Unhandled error", e);
     return json({ error: "Internal server error" }, 500);
