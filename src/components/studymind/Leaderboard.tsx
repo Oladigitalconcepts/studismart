@@ -1,3 +1,4 @@
+import { AvatarImg } from "@/components/studymind/AvatarImg";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Trophy, Loader2, Medal } from "lucide-react";
 import { StatusBar } from "./StatusBar";
@@ -85,7 +86,7 @@ export const Leaderboard = ({ onBack }: Props) => {
                   {r.rank <= 3 ? <Medal className={`h-5 w-5 ${medalColor}`} /> : <span className="text-muted-foreground">{r.rank}</span>}
                 </div>
                 <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                  {r.avatar_url ? <img src={r.avatar_url} alt={r.display_name} className="h-full w-full object-cover" /> : <span>{initials(r.display_name)}</span>}
+                  {r.avatar_url ? <AvatarImg value={r.avatar_url} alt={r.display_name} className="h-full w-full object-cover" /> : <span>{initials(r.display_name)}</span>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{isMe ? "You" : r.display_name}</p>
