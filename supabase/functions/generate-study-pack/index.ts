@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
 
     return json({ study_pack_id: pack.id });
   } catch (e) {
-    console.error(e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    console.error("Unhandled error", e);
+    return json({ error: "Internal server error" }, 500);
   }
 });
