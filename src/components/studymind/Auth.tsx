@@ -54,7 +54,7 @@ export const Auth = ({ onAuthed }: Props) => {
         });
         if (error) throw error;
         track("signup_completed", { method: "email" });
-        toast({ title: "Welcome to StudyMind AI!" });
+        toast({ title: "Welcome to Studismat!" });
         onAuthed({ isNewUser: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -91,7 +91,7 @@ export const Auth = ({ onAuthed }: Props) => {
         <div className="h-14 w-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center shadow-glow">
           <GraduationCap className="h-8 w-8" />
         </div>
-        <h1 className="text-2xl font-bold mt-4">StudyMind AI</h1>
+        <h1 className="text-2xl font-bold mt-4">Studismat</h1>
         <p className="text-white/80 text-sm">{mode === "login" ? "Welcome back" : "Create your account"}</p>
       </div>
 

@@ -20,7 +20,7 @@ export const Splash = ({ onStart }: { onStart: () => void }) => (
     <div className="relative z-10 flex-1 flex items-center justify-center -my-8">
       <img
         src={heroStudent}
-        alt="StudyMind AI student companion"
+        alt="Studismat student companion"
         width={1024}
         height={1024}
         className="w-72 h-72 object-contain animate-float drop-shadow-2xl"
@@ -28,7 +28,7 @@ export const Splash = ({ onStart }: { onStart: () => void }) => (
     </div>
 
     <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-      <h1 className="text-3xl font-bold tracking-tight">StudyMind AI</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Studismat</h1>
       <p className="text-white/80 text-sm max-w-xs">
         Turn your lecture notes into exam success
       </p>

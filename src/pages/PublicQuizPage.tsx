@@ -146,7 +146,7 @@ const PublicQuizPage = () => {
       <StatusBar />
       <header className="flex items-center justify-center px-5 py-3 gap-2">
         <GraduationCap className="h-5 w-5 text-primary" />
-        <h1 className="font-bold text-lg">StudyMind AI</h1>
+        <h1 className="font-bold text-lg">Studismat</h1>
       </header>
 
       {step === "intro" && (
