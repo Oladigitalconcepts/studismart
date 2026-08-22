@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, FileText, ImagePlus, UploadCloud, X } from "lucide-react";
+import { Camera, FileText, ImagePlus, Library, UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,11 +13,13 @@ interface Props {
   setPastedText: (v: string) => void;
   onContinue: () => void;
   ctaLabel?: string;
+  onPickLibrary?: () => void;
 }
 
 export const TestUpload = ({
-  title, setTitle, files, setFiles, pastedText, setPastedText, onContinue, ctaLabel = "Continue",
+  title, setTitle, files, setFiles, pastedText, setPastedText, onContinue, ctaLabel = "Continue", onPickLibrary,
 }: Props) => {
+
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
