@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Info, UploadCloud, Sparkles, FileText } from "lucide-react";
+import { ArrowLeft, Info, UploadCloud, Sparkles, FileText, ListChecks } from "lucide-react";
 import { StatusBar } from "./StatusBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,9 @@ import aiRobot from "@/assets/ai-robot.png";
 interface Props {
   onBack: () => void;
   onComplete: (studyPackId: string) => void;
+  onGenerateTest?: (materialId: string, title: string) => void;
 }
+
 
 const STAGES = [
   { key: "extract", label: "Reading material" },
@@ -24,11 +26,12 @@ const STAGES = [
   { key: "questions", label: "Creating questions" },
 ] as const;
 
-export const UploadScreen = ({ onBack, onComplete }: Props) => {
+export const UploadScreen = ({ onBack, onComplete, onGenerateTest }: Props) => {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [savingForTest, setSavingForTest] = useState(false);
   const [stageIdx, setStageIdx] = useState(0);
 
   const advance = () => {
@@ -39,6 +42,64 @@ export const UploadScreen = ({ onBack, onComplete }: Props) => {
     }, 1400);
     return () => clearInterval(id);
   };
+
+  /** Uploads + extracts + saves the material row (no study pack generation). */
+  const saveMaterial = async () => {
+    const { data: { user } } = await getCurrentUser();
+    if (!user) throw new Error("Please sign in again");
+
+    const finalTitle = title.trim() || file?.name?.replace(/\.[^.]+$/, "") || "Untitled material";
+    if (!file && text.trim().length < 30) {
+      throw new Error("Add a file or paste at least 30 characters of text");
+    }
+
+    let storagePath: string | null = null;
+    let rawText: string | null = text.trim() || null;
+
+    if (file) {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
+      storagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("materials").upload(storagePath, file);
+      if (upErr) throw upErr;
+      try {
+        const extracted = await extractTextFromFile(file);
+        if (extracted && extracted.length > (rawText?.length ?? 0)) rawText = extracted;
+      } catch (err) {
+        console.warn("Text extraction failed", err);
+      }
+      if (!rawText || rawText.length < 30) {
+        throw new Error("Couldn't read text from this file. Try pasting the content instead.");
+      }
+    }
+
+    const { data: material, error: matErr } = await supabase
+      .from("materials")
+      .insert({
+        user_id: user.id,
+        title: finalTitle,
+        source_type: file ? "file" : "text",
+        storage_path: storagePath,
+        raw_text: rawText,
+        status: "pending",
+      })
+      .select()
+      .single();
+    if (matErr || !material) throw matErr ?? new Error("Could not save material");
+    return { id: material.id as string, title: finalTitle };
+  };
+
+  const generateTest = async () => {
+    setSavingForTest(true);
+    try {
+      const m = await saveMaterial();
+      onGenerateTest?.(m.id, m.title);
+    } catch (e: any) {
+      toast({ title: e?.message ?? "Upload failed", variant: "destructive" });
+    } finally {
+      setSavingForTest(false);
+    }
+  };
+
 
   const submit = async () => {
     const { data: { user } } = await getCurrentUser();
@@ -217,10 +278,24 @@ export const UploadScreen = ({ onBack, onComplete }: Props) => {
         </div>
 
         {(file || text.length > 20) && (
-          <Button onClick={submit} className="w-full h-12 rounded-2xl gradient-primary tap-scale font-semibold animate-slide-up">
-            <Sparkles className="h-4 w-4 mr-2" /> Generate Study Pack
-          </Button>
+          <div className="space-y-2 animate-slide-up">
+            <Button onClick={submit} className="w-full h-12 rounded-2xl gradient-primary tap-scale font-semibold">
+              <Sparkles className="h-4 w-4 mr-2" /> Generate Study Pack
+            </Button>
+            {onGenerateTest && (
+              <Button
+                onClick={generateTest}
+                disabled={savingForTest}
+                variant="outline"
+                className="w-full h-12 rounded-2xl tap-scale font-semibold"
+              >
+                <ListChecks className="h-4 w-4 mr-2" />
+                {savingForTest ? "Preparing material…" : "Generate test"}
+              </Button>
+            )}
+          </div>
         )}
+
       </div>
     </div>
   );

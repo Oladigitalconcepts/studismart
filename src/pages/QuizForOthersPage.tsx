@@ -5,15 +5,23 @@ import { useNavigate } from "react-router-dom";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { TestUpload } from "@/components/studymind/test/TestUpload";
 import { TestConfigure } from "@/components/studymind/test/TestConfigure";
+import { LibraryPickerSheet } from "@/components/studymind/test/LibraryPickerSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { buildPackFromFiles, BuiltPack, TestConfig, makeShareToken } from "@/lib/testBuilder";
+import {
+  prepareSourceFromFiles,
+  prepareSourceFromMaterial,
+  generatePack,
+  TestConfig,
+  PreparedSource,
+  makeShareToken,
+} from "@/lib/testBuilder";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/lib/authUser";
 import { toast } from "@/hooks/use-toast";
 import { track } from "@/lib/analytics";
 
-type Step = "upload" | "building" | "configure" | "share";
+type Step = "upload" | "preparing" | "configure" | "generating" | "share";
 
 const QuizForOthersPage = () => {
   const navigate = useNavigate();
@@ -22,37 +30,54 @@ const QuizForOthersPage = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [pasted, setPasted] = useState("");
   const [stage, setStage] = useState("Preparing");
-  const [pack, setPack] = useState<BuiltPack | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [source, setSource] = useState<PreparedSource | null>(null);
   const [config, setConfig] = useState<TestConfig>({ numQuestions: 10, timeLimitSeconds: 600, revealMode: "end" });
   const [shareUrl, setShareUrl] = useState("");
-  const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const startBuild = async () => {
-    setStep("building");
+  const applySource = (prepared: PreparedSource) => {
+    setSource(prepared);
+    if (!title) setTitle(prepared.title);
+    setConfig((c) => ({ ...c, numQuestions: Math.min(c.numQuestions, prepared.capacity) || prepared.capacity }));
+    setStep("configure");
+  };
+
+  const prepareFromUpload = async () => {
+    setStep("preparing");
     track("create_test_started", { mode: "shared" });
     try {
-      const built = await buildPackFromFiles({
-        files, pastedText: pasted, title: title || "Quiz challenge",
-        onStage: setStage,
-      });
-      setPack(built);
-      setConfig((c) => ({ ...c, numQuestions: Math.min(built.questions.length, 10) || c.numQuestions }));
-      setStep("configure");
+      applySource(await prepareSourceFromFiles({
+        files, pastedText: pasted, title: title || "Quiz challenge", onStage: setStage,
+      }));
     } catch (e: any) {
-      toast({ title: e?.message ?? "Couldn't build quiz", variant: "destructive" });
+      toast({ title: e?.message ?? "Couldn't read your material", variant: "destructive" });
       setStep("upload");
     }
   };
 
-  const createShareLink = async () => {
-    if (!pack) return;
-    setCreating(true);
+  const prepareFromLibrary = async (materialId: string) => {
+    setStep("preparing");
+    setStage("Reading material");
     try {
+      applySource(await prepareSourceFromMaterial(materialId));
+    } catch (e: any) {
+      toast({ title: e?.message ?? "Couldn't read that material", variant: "destructive" });
+      setStep("upload");
+    }
+  };
+
+  const generateAndShare = async () => {
+    if (!source) return;
+    setStep("generating");
+    setStage("Generating questions");
+    try {
+      const pack = await generatePack(source.materialId, Math.min(config.numQuestions, source.capacity));
       const { data: { user } } = await getCurrentUser();
       if (!user) throw new Error("Sign in required");
       const subset = pack.questions.slice(0, config.numQuestions);
       const token = makeShareToken();
+      setStage("Creating share link");
       const { error } = await supabase.from("shared_quizzes").insert({
         token,
         creator_id: user.id,
@@ -71,8 +96,7 @@ const QuizForOthersPage = () => {
       setStep("share");
     } catch (e: any) {
       toast({ title: e?.message ?? "Could not create link", variant: "destructive" });
-    } finally {
-      setCreating(false);
+      setStep("configure");
     }
   };
 
@@ -103,6 +127,8 @@ const QuizForOthersPage = () => {
     else navigate(-1);
   };
 
+  const busy = step === "preparing" || step === "generating";
+
   return (
     <div className="animate-fade-in">
       <StatusBar />
@@ -119,12 +145,13 @@ const QuizForOthersPage = () => {
           title={title} setTitle={setTitle}
           files={files} setFiles={setFiles}
           pastedText={pasted} setPastedText={setPasted}
-          onContinue={startBuild}
-          ctaLabel="Generate quiz"
+          onContinue={prepareFromUpload}
+          onPickLibrary={() => setPickerOpen(true)}
+          ctaLabel="Continue"
         />
       )}
 
-      {step === "building" && (
+      {busy && (
         <div className="px-6 pt-16 flex flex-col items-center text-center">
           <Sparkles className="h-16 w-16 text-primary animate-float" />
           <h2 className="text-xl font-bold mt-6">{stage}…</h2>
@@ -132,14 +159,13 @@ const QuizForOthersPage = () => {
         </div>
       )}
 
-      {step === "configure" && pack && (
+      {step === "configure" && source && (
         <TestConfigure
-          available={pack.questions.length}
+          available={source.capacity}
           config={config}
           setConfig={setConfig}
-          onStart={createShareLink}
-          ctaLabel={creating ? "Creating link…" : "Get share link"}
-          startingDisabled={creating}
+          onStart={generateAndShare}
+          ctaLabel="Generate & get share link"
         />
       )}
 
@@ -164,6 +190,12 @@ const QuizForOthersPage = () => {
           </Button>
         </div>
       )}
+
+      <LibraryPickerSheet
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onPick={(materialId, t) => { setTitle(t); prepareFromLibrary(materialId); }}
+      />
     </div>
   );
 };

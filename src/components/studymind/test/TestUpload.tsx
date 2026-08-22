@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, FileText, ImagePlus, UploadCloud, X } from "lucide-react";
+import { Camera, FileText, ImagePlus, Library, UploadCloud, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,11 +13,13 @@ interface Props {
   setPastedText: (v: string) => void;
   onContinue: () => void;
   ctaLabel?: string;
+  onPickLibrary?: () => void;
 }
 
 export const TestUpload = ({
-  title, setTitle, files, setFiles, pastedText, setPastedText, onContinue, ctaLabel = "Continue",
+  title, setTitle, files, setFiles, pastedText, setPastedText, onContinue, ctaLabel = "Continue", onPickLibrary,
 }: Props) => {
+
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
@@ -39,6 +41,23 @@ export const TestUpload = ({
         onChange={(e) => setTitle(e.target.value.slice(0, 80))}
         className="h-12 rounded-xl"
       />
+
+      {onPickLibrary && (
+        <button
+          onClick={onPickLibrary}
+          className="w-full rounded-2xl border border-border bg-card p-3 flex items-center gap-3 tap-scale text-left"
+        >
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Library className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Pick from library</p>
+            <p className="text-[11px] text-muted-foreground break-words">Use a material you already uploaded</p>
+          </div>
+        </button>
+      )}
+
+
 
       <div className="grid grid-cols-3 gap-2">
         <button
