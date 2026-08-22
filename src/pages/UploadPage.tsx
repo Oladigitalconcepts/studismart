@@ -7,6 +7,9 @@ const UploadPage = () => {
     <UploadScreen
       onBack={() => navigate(-1)}
       onComplete={(packId) => navigate(`/studypack/${packId}`, { replace: true })}
+      onGenerateTest={(materialId, title) =>
+        navigate("/create-test", { state: { materialId, title } })
+      }
     />
   );
 };
