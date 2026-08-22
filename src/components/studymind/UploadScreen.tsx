@@ -15,7 +15,9 @@ import aiRobot from "@/assets/ai-robot.png";
 interface Props {
   onBack: () => void;
   onComplete: (studyPackId: string) => void;
+  onGenerateTest?: (materialId: string, title: string) => void;
 }
+
 
 const STAGES = [
   { key: "extract", label: "Reading material" },
