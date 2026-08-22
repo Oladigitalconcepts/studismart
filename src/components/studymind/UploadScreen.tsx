@@ -278,10 +278,24 @@ export const UploadScreen = ({ onBack, onComplete, onGenerateTest }: Props) => {
         </div>
 
         {(file || text.length > 20) && (
-          <Button onClick={submit} className="w-full h-12 rounded-2xl gradient-primary tap-scale font-semibold animate-slide-up">
-            <Sparkles className="h-4 w-4 mr-2" /> Generate Study Pack
-          </Button>
+          <div className="space-y-2 animate-slide-up">
+            <Button onClick={submit} className="w-full h-12 rounded-2xl gradient-primary tap-scale font-semibold">
+              <Sparkles className="h-4 w-4 mr-2" /> Generate Study Pack
+            </Button>
+            {onGenerateTest && (
+              <Button
+                onClick={generateTest}
+                disabled={savingForTest}
+                variant="outline"
+                className="w-full h-12 rounded-2xl tap-scale font-semibold"
+              >
+                <ListChecks className="h-4 w-4 mr-2" />
+                {savingForTest ? "Preparing material…" : "Generate test"}
+              </Button>
+            )}
+          </div>
         )}
+
       </div>
     </div>
   );
