@@ -42,6 +42,23 @@ export const TestUpload = ({
         className="h-12 rounded-xl"
       />
 
+      {onPickLibrary && (
+        <button
+          onClick={onPickLibrary}
+          className="w-full rounded-2xl border border-border bg-card p-3 flex items-center gap-3 tap-scale text-left"
+        >
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Library className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Pick from library</p>
+            <p className="text-[11px] text-muted-foreground break-words">Use a material you already uploaded</p>
+          </div>
+        </button>
+      )}
+
+
+
       <div className="grid grid-cols-3 gap-2">
         <button
           onClick={() => fileRef.current?.click()}
