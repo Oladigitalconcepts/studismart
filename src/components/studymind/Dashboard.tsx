@@ -262,7 +262,7 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
           <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center shadow-soft">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold text-sm tracking-tight">{"\n"}</span>
+          <span className="font-bold text-sm tracking-tight">Studismat</span>
         </div>
         <div className="flex items-center gap-2">
           <CoinBalancePill compact />
