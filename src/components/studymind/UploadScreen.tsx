@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Info, UploadCloud, Sparkles, FileText } from "lucide-react";
+import { ArrowLeft, Info, UploadCloud, Sparkles, FileText, ListChecks } from "lucide-react";
 import { StatusBar } from "./StatusBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
