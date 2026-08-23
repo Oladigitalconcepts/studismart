@@ -51,7 +51,7 @@ export const AppLayout = () => {
   // Route guards.
   useEffect(() => {
     if (loading) return;
-    const publicRoutes = ["/", "/auth"];
+    const publicRoutes = ["/", "/auth", "/reset-password"];
     const isPublic = publicRoutes.includes(location.pathname) || isPublicQuizRoute(location.pathname);
 
     if (!user && !isPublic && location.pathname !== "/onboarding") {
