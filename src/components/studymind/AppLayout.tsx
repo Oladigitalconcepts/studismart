@@ -15,7 +15,7 @@ import {
 } from "@/lib/notifications";
 import { ensureWallet } from "@/lib/coins";
 
-const HIDE_NAV_PREFIXES = ["/", "/auth", "/onboarding", "/splash"];
+const HIDE_NAV_PREFIXES = ["/", "/auth", "/reset-password", "/onboarding", "/splash"];
 const isPublicQuizRoute = (path: string) => path.startsWith("/q/");
 
 export const AppLayout = () => {
@@ -51,7 +51,7 @@ export const AppLayout = () => {
   // Route guards.
   useEffect(() => {
     if (loading) return;
-    const publicRoutes = ["/", "/auth"];
+    const publicRoutes = ["/", "/auth", "/reset-password"];
     const isPublic = publicRoutes.includes(location.pathname) || isPublicQuizRoute(location.pathname);
 
     if (!user && !isPublic && location.pathname !== "/onboarding") {

@@ -4,6 +4,7 @@
 
 export type AnalyticsEvent =
   | "signup_completed"
+  | "password_reset_requested"
   | "onboarding_started"
   | "onboarding_step_completed"
   | "onboarding_step_abandoned"

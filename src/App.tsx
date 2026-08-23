@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/studymind/AppLayout";
 import SplashPage from "./pages/SplashPage";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import HomePage from "./pages/HomePage";
 import UploadPage from "./pages/UploadPage";
@@ -43,6 +44,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/" element={<SplashPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/dashboard" element={<HomePage />} />
