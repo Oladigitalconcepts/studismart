@@ -127,6 +127,47 @@ export type Database = {
         }
         Relationships: []
       }
+      course_roadmaps: {
+        Row: {
+          course_id: string
+          exam_tips: Json
+          generated_at: string
+          id: string
+          overview: string
+          prerequisites: Json
+          user_id: string
+          weeks: Json
+        }
+        Insert: {
+          course_id: string
+          exam_tips?: Json
+          generated_at?: string
+          id?: string
+          overview?: string
+          prerequisites?: Json
+          user_id: string
+          weeks?: Json
+        }
+        Update: {
+          course_id?: string
+          exam_tips?: Json
+          generated_at?: string
+          id?: string
+          overview?: string
+          prerequisites?: Json
+          user_id?: string
+          weeks?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_roadmaps_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
+            referencedRelation: "semester_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           created_at: string
@@ -567,6 +608,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      semester_courses: {
+        Row: {
+          code: string | null
+          completed_weeks: number[]
+          created_at: string
+          credit_units: number
+          id: string
+          material_ids: string[]
+          notebook_id: string | null
+          semester_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code?: string | null
+          completed_weeks?: number[]
+          created_at?: string
+          credit_units?: number
+          id?: string
+          material_ids?: string[]
+          notebook_id?: string | null
+          semester_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string | null
+          completed_weeks?: number[]
+          created_at?: string
+          credit_units?: number
+          id?: string
+          material_ids?: string[]
+          notebook_id?: string | null
+          semester_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "semester_courses_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      semesters: {
+        Row: {
+          created_at: string
+          id: string
+          level: string | null
+          start_date: string | null
+          term: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          weeks: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string | null
+          start_date?: string | null
+          term?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          weeks?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string | null
+          start_date?: string | null
+          term?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          weeks?: number
+        }
+        Relationships: []
       }
       shared_quiz_attempts: {
         Row: {
