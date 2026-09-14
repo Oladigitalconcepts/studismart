@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   Bell, Upload, Sparkles, Target, FileText, ChevronRight, Loader2,
   BookOpen, AlertTriangle, Flame, CalendarDays, Trophy, ArrowRight,
-  FileCheck2, Users, Bot, Play,
+  FileCheck2, Users, Bot, Play, CalendarRange,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { StatusBar } from "./StatusBar";
