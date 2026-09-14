@@ -373,6 +373,10 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
             icon={Bot} title="AI Tutor" subtitle="Ask any subject"
             color="text-emerald-500" bg="bg-emerald-500/10" onClick={() => navigate("/tutor")}
           />
+          <QuickAction
+            icon={CalendarRange} title="Semester Roadmap" subtitle="Plan every course ahead"
+            color="text-violet-500" bg="bg-violet-500/10" onClick={() => navigate("/semester")}
+          />
         </div>
       </div>
 
