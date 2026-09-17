@@ -57,12 +57,16 @@ const WalletPage = () => {
       setTxs((data ?? []) as Tx[]);
     };
     const verifyAllPending = async () => {
+      // Only re-check recent pending payments — older ones are settled or
+      // marked failed server-side, so re-verifying them wastes requests.
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: pendings } = await supabase
         .from("coin_purchases")
         .select("reference")
         .eq("status", "pending")
+        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
       for (const p of pendings ?? []) {
         try { await supabase.functions.invoke("paystack-verify", { body: { reference: p.reference } }); } catch { /* noop */ }
       }
