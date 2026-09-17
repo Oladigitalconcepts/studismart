@@ -5,9 +5,10 @@ import {
   Settings as SettingsIcon, Flame, Award, ChevronRight, BookOpen, Layers, CheckCircle2,
   HelpCircle, LogOut, Moon, Sun, ArrowLeft, Trophy, Lock, Eye, EyeOff, Bell, Globe,
   Download, Trash2, User as UserIcon, Mail, KeyRound, MessageCircle, FileQuestion, AlertCircle,
-  Sparkles, Brain, Target, Pencil, FileText, HardDrive, Loader2,
+  Sparkles, Brain, Target, Pencil, FileText, HardDrive, Loader2, CalendarRange,
 } from "lucide-react";
 import { StatusBar } from "./StatusBar";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/lib/authUser";
 import { Switch } from "@/components/ui/switch";
