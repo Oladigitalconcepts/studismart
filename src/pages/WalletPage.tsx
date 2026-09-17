@@ -118,14 +118,14 @@ const WalletPage = () => {
         setVerifyMsg("Payment failed. No coins were charged.");
         toast({ title: "Payment failed", description: "No coins were credited.", variant: "destructive" });
         clearUrl();
-      } else if (attempts >= 20) {
+      } else if (attempts >= 12) {
         clearInterval(timer);
         setVerifyState("failed");
         setVerifyMsg("We couldn't confirm your payment in time. Coins will appear once Paystack confirms.");
         clearUrl();
       }
     };
-    const timer = setInterval(tick, 1500);
+    const timer = setInterval(tick, 2500);
     tick();
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
