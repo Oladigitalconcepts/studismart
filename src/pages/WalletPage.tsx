@@ -57,12 +57,16 @@ const WalletPage = () => {
       setTxs((data ?? []) as Tx[]);
     };
     const verifyAllPending = async () => {
+      // Only re-check recent pending payments — older ones are settled or
+      // marked failed server-side, so re-verifying them wastes requests.
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data: pendings } = await supabase
         .from("coin_purchases")
         .select("reference")
         .eq("status", "pending")
+        .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
       for (const p of pendings ?? []) {
         try { await supabase.functions.invoke("paystack-verify", { body: { reference: p.reference } }); } catch { /* noop */ }
       }
@@ -114,14 +118,14 @@ const WalletPage = () => {
         setVerifyMsg("Payment failed. No coins were charged.");
         toast({ title: "Payment failed", description: "No coins were credited.", variant: "destructive" });
         clearUrl();
-      } else if (attempts >= 20) {
+      } else if (attempts >= 12) {
         clearInterval(timer);
         setVerifyState("failed");
         setVerifyMsg("We couldn't confirm your payment in time. Coins will appear once Paystack confirms.");
         clearUrl();
       }
     };
-    const timer = setInterval(tick, 1500);
+    const timer = setInterval(tick, 2500);
     tick();
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
