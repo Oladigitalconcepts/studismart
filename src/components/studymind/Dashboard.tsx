@@ -351,6 +351,23 @@ export const Dashboard = ({ onNavigate, onOpenNotifications }: Props) => {
         </div>
       )}
 
+      {/* SECTION 2.5: Semester Roadmap featured card */}
+      <div className="px-5 mt-5">
+        <button
+          onClick={() => navigate("/semester")}
+          className="w-full rounded-2xl bg-card border border-border shadow-soft p-4 flex items-center gap-3 tap-scale text-left"
+        >
+          <div className="h-11 w-11 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center flex-shrink-0">
+            <CalendarRange className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">Semester Roadmap</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Add your courses, get an AI week-by-week plan</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        </button>
+      </div>
+
       {/* SECTION 3: Quick Actions */}
       <div className="px-5 mt-5">
         <div className="flex items-center justify-between mb-2">

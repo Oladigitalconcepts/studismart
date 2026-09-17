@@ -5,9 +5,10 @@ import {
   Settings as SettingsIcon, Flame, Award, ChevronRight, BookOpen, Layers, CheckCircle2,
   HelpCircle, LogOut, Moon, Sun, ArrowLeft, Trophy, Lock, Eye, EyeOff, Bell, Globe,
   Download, Trash2, User as UserIcon, Mail, KeyRound, MessageCircle, FileQuestion, AlertCircle,
-  Sparkles, Brain, Target, Pencil, FileText, HardDrive, Loader2,
+  Sparkles, Brain, Target, Pencil, FileText, HardDrive, Loader2, CalendarRange,
 } from "lucide-react";
 import { StatusBar } from "./StatusBar";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/lib/authUser";
 import { Switch } from "@/components/ui/switch";
@@ -34,6 +35,7 @@ const applyTheme = (dark: boolean) => {
 
 export const Profile = () => {
   const [dark, setDark] = useState(() => localStorage.getItem(THEME_KEY) === "dark");
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<SubScreen>("main");
   const [name, setName] = useState("");
   const [course, setCourse] = useState("");
@@ -127,6 +129,7 @@ export const Profile = () => {
   const items = [
     { label: "Study Streak", value: `${wallet?.streak_days ?? 0} day${(wallet?.streak_days ?? 0) === 1 ? "" : "s"}`, icon: Flame, color: "text-orange-500", onClick: () => setScreen("streak") },
     { label: "Achievements", value: `${badgesEarned} badge${badgesEarned === 1 ? "" : "s"}`, icon: Award, color: "text-amber-500", onClick: () => setScreen("achievements") },
+    { label: "Semester Roadmap", icon: CalendarRange, color: "text-violet-500", onClick: () => navigate("/semester") },
     { label: "Settings", icon: SettingsIcon, color: "text-primary", onClick: () => setScreen("settings") },
     { label: "Help & Support", icon: HelpCircle, color: "text-blue-500", onClick: () => setScreen("help") },
   ];
