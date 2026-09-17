@@ -53,7 +53,8 @@ Deno.serve(async (req) => {
   });
   const verify = await verifyRes.json();
   if (!verifyRes.ok || verify?.data?.status !== "success") {
-    return new Response(JSON.stringify({ error: "verify failed" }), { status: 400, headers: { "Content-Type": "application/json" } });
+    // Ack with 200 so Paystack doesn't retry a transaction that isn't successful.
+    return new Response(JSON.stringify({ ok: true, ignored: "not_successful" }), { headers: { "Content-Type": "application/json" } });
   }
 
   const { data: pending, error: selErr } = await admin
