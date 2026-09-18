@@ -2,8 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { installGlobalTapHaptics } from "./lib/haptics";
+import { initNative } from "./lib/native";
 
 installGlobalTapHaptics();
+void initNative();
 
 
 // Initialize theme (light by default) + sync browser chrome color
