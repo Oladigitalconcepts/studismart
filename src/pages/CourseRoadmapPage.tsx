@@ -246,7 +246,16 @@ const CourseRoadmapPage = () => {
           </>
         )}
       </div>
+
+      <InsufficientCoinsModal
+        open={needCoins}
+        onOpenChange={setNeedCoins}
+        cost={ROADMAP_COST}
+        balance={wallet?.coins ?? 0}
+        action="generate this course roadmap"
+      />
     </div>
+
   );
 };
 

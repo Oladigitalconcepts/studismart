@@ -34,7 +34,7 @@ export const InsufficientCoinsModal = ({ open, onOpenChange, cost, balance, acti
             <Gift className="h-4 w-4" /> Earn coins
           </button>
           <button
-            onClick={() => { onOpenChange(false); navigate("/wallet"); }}
+            onClick={() => { onOpenChange(false); navigate("/wallet/buy"); }}
             className="rounded-xl py-3 px-3 gradient-primary text-white font-semibold text-sm tap-scale inline-flex items-center justify-center gap-1.5"
           >
             <ShoppingCart className="h-4 w-4" /> Buy coins
