@@ -108,8 +108,10 @@ const CourseRoadmapPage = () => {
             <button onClick={generate} disabled={generating}
               className="h-9 px-3 rounded-full bg-white/15 backdrop-blur text-xs font-bold inline-flex items-center gap-1 tap-scale disabled:opacity-60">
               {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Regenerate
+              <span className="inline-flex items-center gap-0.5 opacity-90">· <Coins className="h-3 w-3" />{ROADMAP_COST}</span>
             </button>
           )}
+
         </div>
         <h1 className="font-bold text-xl break-words">{course.title}</h1>
         <p className="text-white/85 text-xs mt-1">
@@ -138,10 +140,20 @@ const CourseRoadmapPage = () => {
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed px-2">
               We'll create a week-by-week plan for this course using your linked materials — or the standard syllabus if you have none yet.
             </p>
-            <Button className="mt-5" onClick={generate} disabled={generating}>
-              {generating ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Building roadmap…</>) : (<><Sparkles className="h-4 w-4 mr-1" /> Generate roadmap</>)}
-            </Button>
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-100 px-3 py-1.5 text-[11px] font-bold text-amber-700">
+              <Coins className="h-3.5 w-3.5" /> {ROADMAP_COST} coins · you have {(wallet?.coins ?? 0).toLocaleString()}
+            </div>
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <Button onClick={generate} disabled={generating}>
+                {generating ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Building roadmap…</>) : (<><Sparkles className="h-4 w-4 mr-1" /> Generate roadmap</>)}
+              </Button>
+              <button onClick={() => navigate(`/wallet/buy?returnTo=${encodeURIComponent(window.location.pathname)}`)}
+                className="text-[11px] font-semibold text-primary tap-scale">
+                Buy coins
+              </button>
+            </div>
           </div>
+
         ) : (
           <>
             {roadmap.overview && (
