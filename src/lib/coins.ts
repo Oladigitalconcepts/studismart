@@ -18,6 +18,7 @@ export const COSTS = {
   ai_tutor: 1,
   summarize_notes: 2,
   create_quiz_for_others: 3,
+  generate_roadmap: 5,
 } as const;
 
 export type SpendReason = keyof typeof COSTS;
