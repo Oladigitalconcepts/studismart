@@ -27,6 +27,7 @@ import SkillsPage from "./pages/SkillsPage";
 import SkillDetailPage from "./pages/SkillDetailPage";
 import WalletPage from "./pages/WalletPage";
 import WalletSuccessPage from "./pages/WalletSuccessPage";
+import BuyCoinsPage from "./pages/BuyCoinsPage";
 import MissionsPage from "./pages/MissionsPage";
 import SemestersPage from "./pages/SemestersPage";
 import SemesterDetailPage from "./pages/SemesterDetailPage";
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/skills" element={<SkillsPage />} />
             <Route path="/skills/:slug" element={<SkillDetailPage />} />
             <Route path="/wallet" element={<WalletPage />} />
+            <Route path="/wallet/buy" element={<BuyCoinsPage />} />
             <Route path="/wallet/success" element={<WalletSuccessPage />} />
             <Route path="/missions" element={<MissionsPage />} />
             <Route path="/semester" element={<SemestersPage />} />

@@ -225,7 +225,7 @@ const WalletPage = () => {
             <button onClick={() => navigate("/missions")} className="text-[11px] inline-flex items-center gap-1 font-semibold tap-scale text-left">
               🔥 {wallet?.streak_days ?? 0} Day Streak · Check in
             </button>
-            <button onClick={() => document.getElementById("packs")?.scrollIntoView({ behavior: "smooth" })}
+            <button onClick={() => navigate("/wallet/buy")}
               className="bg-white text-violet-700 font-extrabold text-xs rounded-2xl px-4 py-2 tap-scale inline-flex items-center gap-1.5 shadow-lg">
               <Plus className="h-3.5 w-3.5" strokeWidth={3} /> Buy Coins
             </button>
@@ -270,7 +270,7 @@ const WalletPage = () => {
       <div className="px-5 mt-4">
         <div className="rounded-3xl bg-white border border-slate-100 shadow-sm p-3 grid grid-cols-4 gap-2">
           <Quick icon="🎁" label="Earn Coins" sub="Complete tasks" tint="bg-violet-100" onClick={() => navigate("/missions")} />
-          <Quick icon="🛒" label="Buy Coins" sub="Top up now" tint="bg-emerald-100" onClick={() => document.getElementById("packs")?.scrollIntoView({ behavior: "smooth" })} />
+          <Quick icon="🛒" label="Buy Coins" sub="Top up now" tint="bg-emerald-100" onClick={() => navigate("/wallet/buy")} />
           <Quick icon="👑" label="Rewards" sub="See all rewards" tint="bg-amber-100" onClick={() => navigate("/missions")} />
           <Quick icon="🕒" label="History" sub="View activity" tint="bg-blue-100" onClick={() => document.getElementById("history")?.scrollIntoView({ behavior: "smooth" })} />
         </div>

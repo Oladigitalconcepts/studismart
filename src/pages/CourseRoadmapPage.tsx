@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, CheckCircle2, Circle, Clock, Lightbulb, ListChecks, Loader2, RefreshCw, Sparkles,
+  ArrowLeft, CheckCircle2, Circle, Clock, Coins, Lightbulb, ListChecks, Loader2, RefreshCw, Sparkles,
 } from "lucide-react";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { Button } from "@/components/ui/button";
@@ -10,18 +10,25 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
+import { COSTS, spend } from "@/lib/coins";
+import { useWallet } from "@/hooks/useWallet";
+import { InsufficientCoinsModal } from "@/components/studymind/InsufficientCoinsModal";
 import {
   generateRoadmap, getCourse, getRoadmap, updateCourse,
   type CourseRoadmap, type SemesterCourse,
 } from "@/lib/semesters";
 
+const ROADMAP_COST = COSTS.generate_roadmap;
+
 const CourseRoadmapPage = () => {
   const navigate = useNavigate();
   const { courseId } = useParams();
+  const { wallet, refresh: refreshWallet } = useWallet();
   const [course, setCourse] = useState<SemesterCourse | null>(null);
   const [roadmap, setRoadmap] = useState<CourseRoadmap | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [needCoins, setNeedCoins] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -40,18 +47,29 @@ const CourseRoadmapPage = () => {
 
   const generate = async () => {
     if (!courseId || generating) return;
+    if ((wallet?.coins ?? 0) < ROADMAP_COST) {
+      haptic();
+      setNeedCoins(true);
+      return;
+    }
     setGenerating(true);
     haptic();
     try {
       const r = await generateRoadmap(courseId);
       setRoadmap(r);
-      toast.success("Roadmap ready");
+      // Only charge once the plan actually came back.
+      try {
+        await spend("generate_roadmap", { course_id: courseId });
+        refreshWallet();
+      } catch { /* plan is already saved — never block the student on billing */ }
+      toast.success(`Roadmap ready · ${ROADMAP_COST} coins used`);
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't generate roadmap");
     } finally {
       setGenerating(false);
     }
   };
+
 
   const toggleWeek = async (week: number) => {
     if (!course) return;
@@ -90,8 +108,10 @@ const CourseRoadmapPage = () => {
             <button onClick={generate} disabled={generating}
               className="h-9 px-3 rounded-full bg-white/15 backdrop-blur text-xs font-bold inline-flex items-center gap-1 tap-scale disabled:opacity-60">
               {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Regenerate
+              <span className="inline-flex items-center gap-0.5 opacity-90">· <Coins className="h-3 w-3" />{ROADMAP_COST}</span>
             </button>
           )}
+
         </div>
         <h1 className="font-bold text-xl break-words">{course.title}</h1>
         <p className="text-white/85 text-xs mt-1">
@@ -120,10 +140,20 @@ const CourseRoadmapPage = () => {
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed px-2">
               We'll create a week-by-week plan for this course using your linked materials — or the standard syllabus if you have none yet.
             </p>
-            <Button className="mt-5" onClick={generate} disabled={generating}>
-              {generating ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Building roadmap…</>) : (<><Sparkles className="h-4 w-4 mr-1" /> Generate roadmap</>)}
-            </Button>
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-100 px-3 py-1.5 text-[11px] font-bold text-amber-700">
+              <Coins className="h-3.5 w-3.5" /> {ROADMAP_COST} coins · you have {(wallet?.coins ?? 0).toLocaleString()}
+            </div>
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <Button onClick={generate} disabled={generating}>
+                {generating ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Building roadmap…</>) : (<><Sparkles className="h-4 w-4 mr-1" /> Generate roadmap</>)}
+              </Button>
+              <button onClick={() => navigate(`/wallet/buy?returnTo=${encodeURIComponent(window.location.pathname)}`)}
+                className="text-[11px] font-semibold text-primary tap-scale">
+                Buy coins
+              </button>
+            </div>
           </div>
+
         ) : (
           <>
             {roadmap.overview && (
@@ -216,7 +246,16 @@ const CourseRoadmapPage = () => {
           </>
         )}
       </div>
+
+      <InsufficientCoinsModal
+        open={needCoins}
+        onOpenChange={setNeedCoins}
+        cost={ROADMAP_COST}
+        balance={wallet?.coins ?? 0}
+        action="generate this course roadmap"
+      />
     </div>
+
   );
 };
 

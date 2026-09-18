@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.weekly_leaderboard() TO authenticated;
