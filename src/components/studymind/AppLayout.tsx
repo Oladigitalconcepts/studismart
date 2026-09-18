@@ -58,7 +58,9 @@ export const AppLayout = () => {
       navigate("/", { replace: true });
       return;
     }
-    if (user && publicRoutes.includes(location.pathname)) {
+    // A recovery link creates a temporary authenticated session. Keep the
+    // reset page visible so the user can enter and save their new password.
+    if (user && location.pathname === "/auth") {
       navigate("/home", { replace: true });
     }
   }, [user, loading, location.pathname, navigate]);
