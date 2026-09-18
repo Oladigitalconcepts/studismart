@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft, CheckCircle2, Circle, Clock, Lightbulb, ListChecks, Loader2, RefreshCw, Sparkles,
+  ArrowLeft, CheckCircle2, Circle, Clock, Coins, Lightbulb, ListChecks, Loader2, RefreshCw, Sparkles,
 } from "lucide-react";
 import { StatusBar } from "@/components/studymind/StatusBar";
 import { Button } from "@/components/ui/button";
@@ -10,18 +10,25 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
+import { COSTS, spend } from "@/lib/coins";
+import { useWallet } from "@/hooks/useWallet";
+import { InsufficientCoinsModal } from "@/components/studymind/InsufficientCoinsModal";
 import {
   generateRoadmap, getCourse, getRoadmap, updateCourse,
   type CourseRoadmap, type SemesterCourse,
 } from "@/lib/semesters";
 
+const ROADMAP_COST = COSTS.generate_roadmap;
+
 const CourseRoadmapPage = () => {
   const navigate = useNavigate();
   const { courseId } = useParams();
+  const { wallet, refresh: refreshWallet } = useWallet();
   const [course, setCourse] = useState<SemesterCourse | null>(null);
   const [roadmap, setRoadmap] = useState<CourseRoadmap | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [needCoins, setNeedCoins] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -40,18 +47,29 @@ const CourseRoadmapPage = () => {
 
   const generate = async () => {
     if (!courseId || generating) return;
+    if ((wallet?.coins ?? 0) < ROADMAP_COST) {
+      haptic();
+      setNeedCoins(true);
+      return;
+    }
     setGenerating(true);
     haptic();
     try {
       const r = await generateRoadmap(courseId);
       setRoadmap(r);
-      toast.success("Roadmap ready");
+      // Only charge once the plan actually came back.
+      try {
+        await spend("generate_roadmap", { course_id: courseId });
+        refreshWallet();
+      } catch { /* plan is already saved — never block the student on billing */ }
+      toast.success(`Roadmap ready · ${ROADMAP_COST} coins used`);
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't generate roadmap");
     } finally {
       setGenerating(false);
     }
   };
+
 
   const toggleWeek = async (week: number) => {
     if (!course) return;
